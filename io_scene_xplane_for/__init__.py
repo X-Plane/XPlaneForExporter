@@ -38,22 +38,14 @@ def register():
     forest_props.register()
     forest_export.register()
     forest_ui.register()
-    pass
-    """
-    Something isn't right with importing this
     bpy.types.TOPBAR_MT_file_export.append(menu_func)
-    """
 
 
 def unregister():
     forest_props.unregister()
     forest_export.unregister()
     forest_ui.unregister()
-    pass
-    """
-
     bpy.types.TOPBAR_MT_file_export.remove(menu_func)
-    """
 
 
 if __name__ == "__main__":
