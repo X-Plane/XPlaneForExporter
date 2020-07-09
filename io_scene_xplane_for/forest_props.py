@@ -1,5 +1,5 @@
 import bpy
-from . import constants
+from . import forest_constants
 
 
 class ForForXPTreeSettings(bpy.types.PropertyGroup):
@@ -20,7 +20,7 @@ class ForForXPSkipSurfaceDirective(bpy.types.PropertyGroup):
         description="Which surface type the forest should not appear on",
         items=[
             (surface_type, surface_type.title(), surface_type.title())
-            for surface_type in constants.SURFACE_TYPES
+            for surface_type in forest_constants.SURFACE_TYPES
         ],
     )
 
@@ -52,10 +52,10 @@ class ForForXPForestSettings(bpy.types.PropertyGroup):
     )
 
     texture_path: bpy.props.StringProperty(
-        subtype="FILE_PATH",
         name="Relative texture file",
         description="Forest texture file",
         default="",
+        subtype="FILE_PATH",
     )
 
 
@@ -65,7 +65,7 @@ class ForForXPCollectionSettings(bpy.types.PropertyGroup):
     filename: bpy.props.StringProperty(
         name="File Name",
         description="A file name or relative path, if none Collection name is used.",
-        subtype="FILE",
+        subtype="FILE_PATH",
     )
 
 

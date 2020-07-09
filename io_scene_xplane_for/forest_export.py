@@ -14,7 +14,7 @@ from bpy_extras.io_utils import ExportHelper, ImportHelper
 from . import forest_file, forest_helpers, forest_tree
 
 
-class EXPORT_OT_ExportXPlaneFor(bpy.types.Operator, ExportHelper):
+class EXPORT_OT_XPlaneForExport(bpy.types.Operator, ExportHelper):
     """Export to X-Plane Forest file format (.for)"""
 
     bl_idname = "export.xplane_for"
@@ -104,7 +104,7 @@ class EXPORT_OT_ExportXPlaneFor(bpy.types.Operator, ExportHelper):
 
 _classes = (
     # XPLANE_MT_xplane_export_log,
-    EXPORT_OT_ExportXPlaneFor,
+    EXPORT_OT_XPlaneForExport,
 )
 
 register, unregister = bpy.utils.register_classes_factory(_classes)

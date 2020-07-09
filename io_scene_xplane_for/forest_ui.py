@@ -1,9 +1,9 @@
 import itertools
 import bpy
-from . import helpers
+from . import forest_helpers
 
 
-class OBJECT_PT_forforxp(bpy.types.Panel):
+class OBJECT_PT_io_scene_xplane_for(bpy.types.Panel):
     bl_label = "XPlaneForExporter"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -20,8 +20,8 @@ class OBJECT_PT_forforxp(bpy.types.Panel):
         self.layout.prop(tree, "max_height")
 
 
-class SCENE_PT_forforxp(bpy.types.Panel):
-    bl_label = "ExportXPlaneFor"
+class SCENE_PT_io_scene_xplane_for(bpy.types.Panel):
+    bl_label = "XPlaneForExporter"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -38,11 +38,19 @@ class SCENE_PT_forforxp(bpy.types.Panel):
         box = self.layout.box()
         box.label(text="Root Forests")
         try:
-            exportable, nonexportable = itertools.groupby(helpers.get_collections_in_scene(scene)[1:], key=lambda c: c.is_exportable_collection)
-            exportable = list(exportable[1])
-            nonexportable = list(nonexportable[1])
-            print(exportable, nonexportable)
-        except (IndexError, TypeError): # Only 0 or 1 non-master collections
+            exportable = []
+            not_exportable = []
+            for is_exportable, group in itertools.groupby(
+                forest_helpers.get_collections_in_scene(scene)[1:],
+                key=lambda c: c.forforxp.is_exportable_collection,
+            ):
+                if is_exportable:
+                    exportable = list(*group)
+                else:
+                    not_exportable = list(*group)
+
+            print(exportable, not_exportable)
+        except (IndexError, TypeError):  # Only 0 or 1 non-master collections
             pass
         else:
             for exportable_forest in exportable:
@@ -51,7 +59,7 @@ class SCENE_PT_forforxp(bpy.types.Panel):
                 self._draw_collection(context, box, exportable_forest)
             box = self.layout.box()
             box.label(text="Non Root Forests")
-            for nonexportable_forest in nonexportable:
+            for nonexportable_forest in not_exportable:
                 box = self.layout.box()
                 box.label(text=nonexportable_forest.name)
 
@@ -73,5 +81,5 @@ class SCENE_PT_forforxp(bpy.types.Panel):
 
 
 register, unregister = bpy.utils.register_classes_factory(
-    (OBJECT_PT_forforxp, SCENE_PT_forforxp,)
+    (OBJECT_PT_io_scene_xplane_for, SCENE_PT_io_scene_xplane_for,)
 )
