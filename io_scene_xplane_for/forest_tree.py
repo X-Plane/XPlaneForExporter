@@ -15,13 +15,14 @@ class ForestTree:
         except IndexError:
             raise
         img = vert_quad.material_slots[0].material.node_tree.nodes["Image Texture"].image
+        size_x, size_y = img.size
         # 0___3
         # |   |
         # 1---2
         uvs = [uv.uv for uv in vert_quad.data.uv_layers.active.data]
         assert len(uvs) == 4
-        self.s, self.t = (round(uvs[1].x * img.size[0]), round(uvs[1].y * img.size[1]))
-        self.w, self.h = (uvs[3].x * img.size[0]), round(uvs[3].y * img.size[0])
+        self.s, self.t = (round(uvs[1].x * size_x), round(uvs[1].y * size_y))
+        self.w, self.h = (round(uvs[3].x * size_y), round(uvs[3].y * size_y))
         # TODO: middle offset idea
         self.offset = uvs[2][0] - uvs[1][0]
         # TODO: Auto pick frequency feature

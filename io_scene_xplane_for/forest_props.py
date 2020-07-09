@@ -52,8 +52,15 @@ class ForForXPForestSettings(bpy.types.PropertyGroup):
     )
 
     texture_path: bpy.props.StringProperty(
-        name="Relative texture file",
+        name="Texture File",
         description="Forest texture file",
+        default="",
+        subtype="FILE_PATH",
+    )
+
+    texture_path_normal: bpy.props.StringProperty(
+        name="Texture File (Normal)",
+        description="(Normal) Forest texture file",
         default="",
         subtype="FILE_PATH",
     )
@@ -62,7 +69,7 @@ class ForForXPForestSettings(bpy.types.PropertyGroup):
 class ForForXPCollectionSettings(bpy.types.PropertyGroup):
     is_exportable_collection: bpy.props.BoolProperty(name="Root Forest", default=False)
     forest: bpy.props.PointerProperty(type=ForForXPForestSettings)
-    filename: bpy.props.StringProperty(
+    file_name: bpy.props.StringProperty(
         name="File Name",
         description="A file name or relative path, if none Collection name is used.",
         subtype="FILE_PATH",

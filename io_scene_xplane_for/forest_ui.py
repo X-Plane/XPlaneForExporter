@@ -61,7 +61,9 @@ class SCENE_PT_io_scene_xplane_for(bpy.types.Panel):
                 box = box.box()
                 column = box.column_flow(columns=2, align=True)
                 column.label(text=not_exportable_forest.name)
-                column.prop(not_exportable_forest.xplane_for, "is_exportable_collection")
+                column.prop(
+                    not_exportable_forest.xplane_for, "is_exportable_collection"
+                )
 
     def _draw_collection(self, context, layout, collection):
         scene = context.scene
@@ -69,12 +71,20 @@ class SCENE_PT_io_scene_xplane_for(bpy.types.Panel):
         box = layout.box()
         column = box.column_flow(columns=2, align=True)
         column.label(text=collection.name)
+
         column.prop(collection.xplane_for, "is_exportable_collection")
+
+        box.prop(collection.xplane_for, "file_name")
+
         box.label(text="Texture Settings")
-        (box.row().prop(forest, "texture_path"), box.row().prop(forest, "scale"))
+        box.row().prop(forest, "texture_path")
+        box.row().prop(forest, "scale")
+
         box = layout.box()
         box.label(text="Behavior Settings")
-        (box.row().prop(forest, "spacing"), box.row().prop(forest, "randomness"))
+        box.row().prop(forest, "spacing")
+        box.row().prop(forest, "randomness")
+
         lod_row = layout.row()
         lod_row.prop(forest, "has_max_lod")
         if forest.has_max_lod:

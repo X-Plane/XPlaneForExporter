@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 import bpy
 
@@ -11,8 +11,10 @@ class ForestFile:
         # self.spacing = root_collection.xplane_for.spacing
         # self.random = root_collection.xplane_for.random
         self._root_collection = root_collection
-        #TODO
-        self.filename = "bleh.for"#self._root_collection.xplane.filename
+        file_name = self._root_collection.xplane_for.file_name
+        self.file_name = file_name if file_name else self._root_collection.name
+        self.scale_x:int = None
+        self.scale_y:int = None
 
     def collect(self):
         for forest_empty in [
@@ -21,6 +23,20 @@ class ForestFile:
             t = forest_tree.ForestTree(forest_empty)
             t.collect()
             self.trees.append(t)
+
+        try:
+            img = (
+                self.trees[0]
+                .forest_empty.children[0]
+                .material_slots[0]
+                .material.node_tree.nodes["Image Texture"]
+                .image
+            )
+        except (IndexError):
+            #logger.error("You didn't have at least one tree with an Image Texture for the base color node")
+            return
+        else:
+            self.scale_x, self.scale_y = img.size
 
     def write(self):
         debug = True
@@ -32,11 +48,13 @@ class ForestFile:
                 "FOREST",
                 f"TEXTURE {forest_settings.texture_path}",
                 "",
-                f"LOD\t{helpers.floatToStr(forest_settings.max_lod)}"
+                f"LOD\t{forest_helpers.floatToStr(forest_settings.max_lod)}"
                 if forest_settings.has_max_lod
                 else f"",
-                f"SPACING\t{' '.join(map(helpers.floatToStr,forest_settings.spacing))}",
-                f"RANDOM\t{' '.join(map(helpers.floatToStr,forest_settings.randomness))}",
+                f"SCALE_X\t{self.scale_x}",
+                f"SCALE_Y\t{self.scale_y}",
+                f"SPACING\t{' '.join(map(forest_helpers.floatToStr,forest_settings.spacing))}",
+                f"RANDOM\t{' '.join(map(forest_helpers.floatToStr,forest_settings.randomness))}",
                 f"{'' if forest_settings.cast_shadow else 'NO_SHADOW'}",
                 "",
             )
