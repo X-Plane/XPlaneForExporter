@@ -25,9 +25,9 @@ class ForestTree:
         # TODO: middle offset idea
         self.offset = uvs[2][0] - uvs[1][0]
         # TODO: Auto pick frequency feature
-        self.frequency = forest_empty.forforxp.tree.frequency
-        self.min_height = forest_empty.forforxp.tree.min_height
-        self.max_height = forest_empty.forforxp.tree.max_height
+        self.frequency = forest_empty.xplane_for.tree.frequency
+        self.min_height = forest_empty.xplane_for.tree.min_height
+        self.max_height = forest_empty.xplane_for.tree.max_height
         # TODO: Allow for center cut idea
         self.quads = 1
         self.type = 0  # forest_file.current collection, or get current collection's position in list

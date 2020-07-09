@@ -17,18 +17,22 @@ if "bpy" in locals():
     importlib.reload(forest_props)
     importlib.reload(forest_export)
     importlib.reload(forest_ui)
-    #imp.reload(xplane_ops)
-    #imp.reload(xplane_ops_dev)
-    #imp.reload(xplane_config)
-    #imp.reload(xplane_updater)
+    # imp.reload(xplane_ops)
+    # imp.reload(xplane_ops_dev)
+    # imp.reload(xplane_config)
+    # imp.reload(xplane_updater)
 else:
     import bpy
     from . import forest_props
     from . import forest_export
     from . import forest_ui
 
-#def menu_func(self, context):
-#   self.layout.operator(forest_export.EXPORT_OT_ExportForXPlane.bl_idname, text = "X-Plane Forest (.for)")
+
+def menu_func(self, context):
+    self.layout.operator(
+        forest_export.EXPORT_OT_XPlaneFor.bl_idname, text="X-Plane Forest (.for)"
+    )
+
 
 def register():
     forest_props.register()
@@ -39,6 +43,7 @@ def register():
     Something isn't right with importing this
     bpy.types.TOPBAR_MT_file_export.append(menu_func)
     """
+
 
 def unregister():
     forest_props.unregister()
@@ -51,5 +56,5 @@ def unregister():
     """
 
 
-if  __name__ == "__main__":
+if __name__ == "__main__":
     register()

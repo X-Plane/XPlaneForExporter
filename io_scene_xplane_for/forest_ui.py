@@ -14,7 +14,7 @@ class OBJECT_PT_io_scene_xplane_for(bpy.types.Panel):
         return context.object.type == "EMPTY"
 
     def draw(self, context):
-        tree = context.object.forforxp.tree
+        tree = context.object.xplane_for.tree
         self.layout.prop(tree, "frequency")
         self.layout.prop(tree, "min_height")
         self.layout.prop(tree, "max_height")
@@ -42,31 +42,34 @@ class SCENE_PT_io_scene_xplane_for(bpy.types.Panel):
             not_exportable = []
             for is_exportable, group in itertools.groupby(
                 forest_helpers.get_collections_in_scene(scene)[1:],
-                key=lambda c: c.forforxp.is_exportable_collection,
+                key=lambda c: c.xplane_for.is_exportable_collection,
             ):
                 if is_exportable:
-                    exportable = list(*group)
+                    exportable = list(group)
                 else:
-                    not_exportable = list(*group)
+                    not_exportable = list(group)
 
-            print(exportable, not_exportable)
-        except (IndexError, TypeError):  # Only 0 or 1 non-master collections
+        except (IndexError, TypeError) as e:  # Only 0 or 1 non-master collections
+            print(e)
             pass
         else:
             for exportable_forest in exportable:
-                box = self.layout.box()
-                box.label(text=exportable_forest.name)
                 self._draw_collection(context, box, exportable_forest)
             box = self.layout.box()
             box.label(text="Non Root Forests")
-            for nonexportable_forest in not_exportable:
-                box = self.layout.box()
-                box.label(text=nonexportable_forest.name)
+            for not_exportable_forest in not_exportable:
+                box = box.box()
+                column = box.column_flow(columns=2, align=True)
+                column.label(text=not_exportable_forest.name)
+                column.prop(not_exportable_forest.xplane_for, "is_exportable_collection")
 
     def _draw_collection(self, context, layout, collection):
         scene = context.scene
-        forest = collection.forforxp.forest
+        forest = collection.xplane_for.forest
         box = layout.box()
+        column = box.column_flow(columns=2, align=True)
+        column.label(text=collection.name)
+        column.prop(collection.xplane_for, "is_exportable_collection")
         box.label(text="Texture Settings")
         (box.row().prop(forest, "texture_path"), box.row().prop(forest, "scale"))
         box = layout.box()

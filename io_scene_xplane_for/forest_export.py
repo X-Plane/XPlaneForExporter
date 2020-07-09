@@ -3,6 +3,7 @@
 import os
 import os.path
 import sys
+
 # from .xplane_config import getDebug
 # from .xplane_helpers import XPlaneLogger, logger
 from typing import IO, Any, List, Optional
@@ -14,7 +15,7 @@ from bpy_extras.io_utils import ExportHelper, ImportHelper
 from . import forest_file, forest_helpers, forest_tree
 
 
-class EXPORT_OT_XPlaneForExport(bpy.types.Operator, ExportHelper):
+class EXPORT_OT_XPlaneFor(bpy.types.Operator, ExportHelper):
     """Export to X-Plane Forest file format (.for)"""
 
     bl_idname = "export.xplane_for"
@@ -33,7 +34,7 @@ class EXPORT_OT_XPlaneForExport(bpy.types.Operator, ExportHelper):
         debug = True
         # self._startLogging()
         # --- collect ---
-        def collect_files()->List[forest_file.ForestFile]:
+        def collect_files() -> List[forest_file.ForestFile]:
             forest_files = []
             for col in forest_helpers.get_exportable_roots_in_scene(
                 bpy.context.scene, bpy.context.view_layer
@@ -42,6 +43,7 @@ class EXPORT_OT_XPlaneForExport(bpy.types.Operator, ExportHelper):
                 ff.collect()
                 forest_files.append(ff)
             return forest_files
+
         forest_files = collect_files()
         # ---------------
 
@@ -49,7 +51,7 @@ class EXPORT_OT_XPlaneForExport(bpy.types.Operator, ExportHelper):
         def write_to_disk(forest_file) -> None:
             o = forest_file.write()
             if debug:
-                print("---",o,"---", sep="\n")
+                print("---", o, "---", sep="\n")
             file_name = bpy.path.ensure_ext(forest_file._root_collection.name, ".for")
             # TODO: when we have a logger again
             # if logger.errors:
@@ -79,14 +81,14 @@ class EXPORT_OT_XPlaneForExport(bpy.types.Operator, ExportHelper):
                 continue
 
         if not forest_files:
-            #logger.error("Could not find any Root Forests, did you forget check 'Root Forest'?")
+            # logger.error("Could not find any Root Forests, did you forget check 'Root Forest'?")
             # logger.clear()
-            #logger.end
+            # logger.end
             return {"CANCELLED"}
-#        elif logger.errors:
-            # logger.clear()
-#            return {"CANCELLED"}
-#        elif not logger.errors and forest_files:
+        #        elif logger.errors:
+        # logger.clear()
+        #            return {"CANCELLED"}
+        #        elif not logger.errors and forest_files:
         else:
             #            logger.success("Export finished without errors")
             # logger.clear()
@@ -104,7 +106,7 @@ class EXPORT_OT_XPlaneForExport(bpy.types.Operator, ExportHelper):
 
 _classes = (
     # XPLANE_MT_xplane_export_log,
-    EXPORT_OT_XPlaneForExport,
+    EXPORT_OT_XPlaneFor,
 )
 
 register, unregister = bpy.utils.register_classes_factory(_classes)

@@ -89,13 +89,13 @@ def register():
     for c in _classes:
         bpy.utils.register_class(c)
 
-    bpy.types.Collection.forforxp = bpy.props.PointerProperty(
+    bpy.types.Collection.xplane_for = bpy.props.PointerProperty(
         type=ForForXPCollectionSettings, name=".for Collection Settings"
     )
 
-    bpy.types.Object.forforxp = bpy.props.PointerProperty(type=ForForXPObjectSettings)
+    bpy.types.Object.xplane_for = bpy.props.PointerProperty(type=ForForXPObjectSettings)
 
-    bpy.types.Scene.forforxp = bpy.props.PointerProperty(
+    bpy.types.Scene.xplane_for = bpy.props.PointerProperty(
         type=ForForXPSceneSettings, name=".for Scene Settings"
     )
 

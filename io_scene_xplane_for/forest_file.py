@@ -8,8 +8,8 @@ from . import forest_helpers, forest_tree
 class ForestFile:
     def __init__(self, root_collection: bpy.types.Collection):
         self.trees: List[forest_tree.ForestTree] = []
-        # self.spacing = root_collection.forforxp.spacing
-        # self.random = root_collection.forforxp.random
+        # self.spacing = root_collection.xplane_for.spacing
+        # self.random = root_collection.xplane_for.random
         self._root_collection = root_collection
         #TODO
         self.filename = "bleh.for"#self._root_collection.xplane.filename
@@ -24,7 +24,7 @@ class ForestFile:
 
     def write(self):
         debug = True
-        forest_settings = self._root_collection.forforxp.forest
+        forest_settings = self._root_collection.xplane_for.forest
         o = "\n".join(
             (
                 "A",
