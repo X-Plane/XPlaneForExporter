@@ -71,12 +71,9 @@ def get_exportable_roots_in_scene(scene: bpy.types.Scene, view_layer:bpy.types.V
 def get_plugin_resources_folder()->str:
     return os.path.join(os.path.dirname(__file__),"resources")
 
-def is_visible_in_viewport(datablock: Union[bpy.types.Collection, bpy.types.Object], view_layer:bpy.types.ViewLayer)->Optional[ExportableRoot]:
-    if isinstance(datablock, bpy.types.Collection):
-        all_layer_collections = {c.name: c for c in get_layer_collections_in_view_layer(view_layer)}
-        return all_layer_collections[datablock.name].is_visible
-    elif isinstance(datablock, bpy.types.Object):
-        return datablock.visible_get() or None
+def is_visible_in_viewport(datablock: bpy.types.Collection, view_layer:bpy.types.ViewLayer)->Optional[ExportableRoot]:
+    all_layer_collections = {c.name: c for c in get_layer_collections_in_view_layer(view_layer)}
+    return all_layer_collections[datablock.name].is_visible
 
 def is_exportable_root(potential_root: PotentialRoot, view_layer:bpy.types.ViewLayer)->bool:
     """
@@ -84,7 +81,7 @@ def is_exportable_root(potential_root: PotentialRoot, view_layer:bpy.types.ViewL
     we have to provide it
     """
     return (
-        potential_root.xplane.is_exportable_collection
+        potential_root.xplane_for.is_exportable_collection
         and is_visible_in_viewport(potential_root, view_layer)
     )
 
@@ -114,10 +111,26 @@ Logging Style Guide:
 Spending 20mins on a good error message is better than 2hrs troubleshooting an author's
 non-existant bug
 """
-class XPlaneLogger():
+class Logger():
     def __init__(self):
         self.transports = []
         self.messages = []
+
+    @property
+    def errors(self):
+        return [m["message"] for m in self.messages if m["type"] == "error"]
+
+    @property
+    def infos(self):
+        return [m["message"] for m in self.messages if m["type"] == "info"]
+
+    @property
+    def successes(self):
+        return [m["message"] for m in self.messages if m["type"] == "success"]
+
+    @property
+    def warnings(self):
+        return [m["message"] for m in self.messages if m["type"] == "warning"]
 
     def addTransport(self, transport, messageTypes = ['error', 'warning', 'info', 'success']):
         self.transports.append({
@@ -126,14 +139,8 @@ class XPlaneLogger():
         })
 
     def clear(self):
-        self.clearTransports()
-        self.clearMessages()
-
-    def clearTransports(self):
-        del self.transports[:]
-
-    def clearMessages(self):
-        del self.messages[:]
+        self.transports.clear()
+        self.messages.clear()
 
     def messagesToString(self, messages = None):
         if messages == None:
@@ -142,7 +149,7 @@ class XPlaneLogger():
         out = ''
 
         for message in messages:
-            out += XPlaneLogger.messageToString(message['type'], message['message'], message['context']) + '\n'
+            out += Logger.messageToString(message['type'], message['message'], message['context']) + '\n'
 
         return out
 
@@ -169,44 +176,13 @@ class XPlaneLogger():
     def success(self, message, context = None):
         self.log('success', message, context)
 
-    def findOfType(self, messageType):
-        messages = []
-
-        for message in self.messages:
-            if message['type'] == messageType:
-                messages.append(message)
-
-        return messages
-
-    def hasOfType(self, messageType):
-        for message in self.messages:
-            if message['type'] == messageType:
-                return True
-
-        return False
-
-    def findErrors(self):
-        return self.findOfType('error')
-
-    def hasErrors(self):
-        return self.hasOfType('error')
-
-    def findWarnings(self):
-        return self.findOfType('warning')
-
-    def hasWarnings(self):
-        return self.hasOfType('warning')
-
-    def findInfos(self):
-        return self.findOfType('info')
-
     @staticmethod
     def messageToString(messageType, message, context = None):
-        io_xplane2blender.xplane_helpers.message_to_str_count += 1
+        #message_to_str_count += 1
         return '%s: %s' % (messageType.upper(), message)
 
     @staticmethod
-    def InternalTextTransport(name = 'XPlane2Blender.log'):
+    def InternalTextTransport(name = 'XPlaneForExporter.log'):
         if bpy.data.texts.find(name) == -1:
             log = bpy.data.texts.new(name)
         else:
@@ -215,25 +191,25 @@ class XPlaneLogger():
         log.clear()
 
         def transport(messageType, message, context = None):
-            log.write(XPlaneLogger.messageToString(messageType, message, context) + '\n')
+            log.write(Logger.messageToString(messageType, message, context) + '\n')
 
         return transport
 
     @staticmethod
     def ConsoleTransport():
         def transport(messageType, message, context = None):
-            if io_xplane2blender.xplane_helpers.message_to_str_count == 1:
-                print('\n')
-            print(XPlaneLogger.messageToString(messageType, message, context))
+            #if io_xplane2blender.xplane_helpers.message_to_str_count == 1:
+                #print('\n')
+            print(Logger.messageToString(messageType, message, context))
 
         return transport
 
     @staticmethod
     def FileTransport(filehandle):
         def transport(messageType, message, context = None):
-            filehandle.write(XPlaneLogger.messageToString(messageType, message, context) + '\n')
+            filehandle.write(Logger.messageToString(messageType, message, context) + '\n')
 
         return transport
 
 
-logger = XPlaneLogger()
+logger = Logger()

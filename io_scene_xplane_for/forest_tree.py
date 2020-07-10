@@ -1,4 +1,5 @@
 import bpy
+import pprint
 
 
 class ForestTree:
@@ -10,19 +11,26 @@ class ForestTree:
         # TODO: Pick by geometry instead of by alphabetical order
         vert_quad = self.forest_empty.children[0]
         try:
-            #horz_quad = self.forest_empty.children[1]
+            # horz_quad = self.forest_empty.children[1]
             pass
         except IndexError:
             raise
-        img = vert_quad.material_slots[0].material.node_tree.nodes["Image Texture"].image
+        img = (
+            vert_quad.material_slots[0].material.node_tree.nodes["Image Texture"].image
+        )
         size_x, size_y = img.size
-        # 0___3
+        print("size", *img.size)
+        # 3___2
         # |   |
-        # 1---2
+        # 0---1
         uvs = [uv.uv for uv in vert_quad.data.uv_layers.active.data]
-        assert len(uvs) == 4
-        self.s, self.t = (round(uvs[1].x * size_x), round(uvs[1].y * size_y))
-        self.w, self.h = (round(uvs[3].x * size_y), round(uvs[3].y * size_y))
+        pprint.pprint([((uv.x * size_x), (uv.y * size_y)) for uv in uvs])
+        # TODO: Handle multiple faces at once
+        bl, br, tr, tl = uvs[:4]
+        # assert len(uvs) == 4
+        self.s, self.t = (round(bl.x * size_x), round(bl.y * size_y))
+        self.w, self.h = (round(tr.x * size_y) - self.s, round(tr.y * size_y) - self.t)
+        print("stwh", self.s, self.t, self.w, self.h)
         # TODO: middle offset idea
         self.offset = uvs[2][0] - uvs[1][0]
         # TODO: Auto pick frequency feature

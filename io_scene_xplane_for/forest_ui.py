@@ -78,7 +78,6 @@ class SCENE_PT_io_scene_xplane_for(bpy.types.Panel):
 
         box.label(text="Texture Settings")
         box.row().prop(forest, "texture_path")
-        box.row().prop(forest, "scale")
 
         box = layout.box()
         box.label(text="Behavior Settings")

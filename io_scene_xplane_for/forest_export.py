@@ -74,6 +74,7 @@ class EXPORT_OT_XPlaneFor(bpy.types.Operator, ExportHelper):
                 with open(final_path, "w") as f:
                     f.write(o)
 
+        print(forest_files)
         for ff in forest_files:
             try:
                 write_to_disk(ff)

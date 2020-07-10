@@ -2,19 +2,19 @@ import bpy
 from . import forest_constants
 
 
-class ForForXPTreeSettings(bpy.types.PropertyGroup):
+class XPlaneForTreeSettings(bpy.types.PropertyGroup):
     frequency: bpy.props.FloatProperty(name="Frequency", min=0.0)
     min_height: bpy.props.FloatProperty(name="Min. Tree Height", min=0.0)
     max_height: bpy.props.FloatProperty(name="Max. Tree Height", min=0.0)
     # quads: bpy.props.IntProperty(min=1,max=2)
 
 
-class ForForXPObjectSettings(bpy.types.PropertyGroup):
-    tree: bpy.props.PointerProperty(type=ForForXPTreeSettings)
+class XPlaneForObjectSettings(bpy.types.PropertyGroup):
+    tree: bpy.props.PointerProperty(type=XPlaneForTreeSettings)
     pass
 
 
-class ForForXPSkipSurfaceDirective(bpy.types.PropertyGroup):
+class XPlaneForSkipSurfaceDirective(bpy.types.PropertyGroup):
     skip_surface: bpy.props.EnumProperty(
         name="Skip Surface",
         description="Which surface type the forest should not appear on",
@@ -25,7 +25,7 @@ class ForForXPSkipSurfaceDirective(bpy.types.PropertyGroup):
     )
 
 
-class ForForXPForestSettings(bpy.types.PropertyGroup):
+class XPlaneForForestSettings(bpy.types.PropertyGroup):
     cast_shadow: bpy.props.BoolProperty(name="Cast Shadow", default=True)
     has_max_lod: bpy.props.BoolProperty(
         name="Has Max LOD", description="If true, a maximum LOD is used", default=False
@@ -39,15 +39,9 @@ class ForForXPForestSettings(bpy.types.PropertyGroup):
         min=0,
         size=2,
     )
-    scale: bpy.props.IntVectorProperty(
-        name="XY Scale",
-        description="X and Y Co-ordinate scale for texture co-ords. Does not have to match actual file",
-        min=0,
-        size=2,
-    )
     spacing: bpy.props.IntVectorProperty(name="Spacing", min=0, size=2)
     surfaces_to_skip: bpy.props.CollectionProperty(
-        type=ForForXPSkipSurfaceDirective,
+        type=XPlaneForSkipSurfaceDirective,
         description="Collection of surface types to skip, repeats not printed twice",
     )
 
@@ -66,9 +60,9 @@ class ForForXPForestSettings(bpy.types.PropertyGroup):
     )
 
 
-class ForForXPCollectionSettings(bpy.types.PropertyGroup):
+class XPlaneForCollectionSettings(bpy.types.PropertyGroup):
     is_exportable_collection: bpy.props.BoolProperty(name="Root Forest", default=False)
-    forest: bpy.props.PointerProperty(type=ForForXPForestSettings)
+    forest: bpy.props.PointerProperty(type=XPlaneForForestSettings)
     file_name: bpy.props.StringProperty(
         name="File Name",
         description="A file name or relative path, if none Collection name is used.",
@@ -76,19 +70,19 @@ class ForForXPCollectionSettings(bpy.types.PropertyGroup):
     )
 
 
-class ForForXPSceneSettings(bpy.types.PropertyGroup):
+class XPlaneForSceneSettings(bpy.types.PropertyGroup):
     # TODO: This should be a collection
-    # forests:bpy.props.CollectionProperty(ForForXPForestSettings)
+    # forests:bpy.props.CollectionProperty(XPlaneForForestSettings)
     pass
 
 
 _classes = (
-    ForForXPTreeSettings,
-    ForForXPSkipSurfaceDirective,
-    ForForXPForestSettings,
-    ForForXPObjectSettings,
-    ForForXPCollectionSettings,
-    ForForXPSceneSettings,
+    XPlaneForTreeSettings,
+    XPlaneForSkipSurfaceDirective,
+    XPlaneForForestSettings,
+    XPlaneForObjectSettings,
+    XPlaneForCollectionSettings,
+    XPlaneForSceneSettings,
 )
 
 
@@ -97,13 +91,13 @@ def register():
         bpy.utils.register_class(c)
 
     bpy.types.Collection.xplane_for = bpy.props.PointerProperty(
-        type=ForForXPCollectionSettings, name=".for Collection Settings"
+        type=XPlaneForCollectionSettings, name=".for Collection Settings"
     )
 
-    bpy.types.Object.xplane_for = bpy.props.PointerProperty(type=ForForXPObjectSettings)
+    bpy.types.Object.xplane_for = bpy.props.PointerProperty(type=XPlaneForObjectSettings)
 
     bpy.types.Scene.xplane_for = bpy.props.PointerProperty(
-        type=ForForXPSceneSettings, name=".for Scene Settings"
+        type=XPlaneForSceneSettings, name=".for Scene Settings"
     )
 
 
