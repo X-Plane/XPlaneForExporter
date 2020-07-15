@@ -13,12 +13,14 @@ class ForestFile:
         self._root_collection = root_collection
         file_name = self._root_collection.xplane_for.file_name
         self.file_name = file_name if file_name else self._root_collection.name
-        self.scale_x:int = None
-        self.scale_y:int = None
+        self.scale_x: int = None
+        self.scale_y: int = None
 
     def collect(self):
         for forest_empty in [
-            obj for obj in self._root_collection.all_objects if obj.type == "EMPTY"
+            obj
+            for obj in self._root_collection.all_objects
+            if obj.type == "EMPTY" and (0 < len(obj.children) <= 2)
         ]:
             t = forest_tree.ForestTree(forest_empty)
             t.collect()
@@ -33,7 +35,7 @@ class ForestFile:
                 .image
             )
         except (IndexError):
-            #logger.error("You didn't have at least one tree with an Image Texture for the base color node")
+            # logger.error("You didn't have at least one tree with an Image Texture for the base color node")
             return
         else:
             self.scale_x, self.scale_y = img.size

@@ -3,7 +3,6 @@
 import os
 import os.path
 import sys
-
 # from .xplane_config import getDebug
 # from .xplane_helpers import XPlaneLogger, logger
 from typing import IO, Any, List, Optional
@@ -74,7 +73,7 @@ class EXPORT_OT_XPlaneFor(bpy.types.Operator, ExportHelper):
                 with open(final_path, "w") as f:
                     f.write(o)
 
-        print(forest_files)
+        print("num forest files", len(forest_files))
         for ff in forest_files:
             try:
                 write_to_disk(ff)
