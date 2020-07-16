@@ -55,18 +55,20 @@ class EXPORT_OT_XPlaneFor(bpy.types.Operator, ExportHelper):
             # TODO: when we have a logger again
             # if logger.errors:
             # return
+            blend_path = bpy.context.blend_data.filepath
             if self.filepath:
                 final_path = os.path.abspath(os.path.join(self.filepath, file_name))
             elif bpy.context.blend_data.filepath:
                 final_path = os.path.abspath(
-                    os.path.join(bpy.context.blend_data.filepath, file_name)
+                    os.path.join(os.path.dirname(blend_path), file_name)
                 )
             # elif dry_run:
 
             assert final_path.endswith(".for")
             try:
-                os.makedirs(final_path, exist_ok=True)
+                os.makedirs(os.path.dirname(final_path), exist_ok=True)
             except OSError as e:
+                print(e)
                 # logger.error(e)
                 raise
             else:

@@ -1,3 +1,4 @@
+import pathlib
 from typing import List, Tuple
 
 import bpy
@@ -13,6 +14,7 @@ class ForestFile:
         self._root_collection = root_collection
         file_name = self._root_collection.xplane_for.file_name
         self.file_name = file_name if file_name else self._root_collection.name
+        self.texture_file: pathlib.Path = pathlib.Path()
         self.scale_x: int = None
         self.scale_y: int = None
 
@@ -35,10 +37,12 @@ class ForestFile:
                 .image
             )
         except (IndexError):
-            # logger.error("You didn't have at least one tree with an Image Texture for the base color node")
+            print("You didn't have at least one tree with an Image Texture for the base color node")
             return
         else:
             self.scale_x, self.scale_y = img.size
+
+            self.texture_path = bpy.path.relpath(img.filepath).replace("//","")
 
     def write(self):
         debug = True
@@ -48,7 +52,7 @@ class ForestFile:
                 "A",
                 "800",
                 "FOREST",
-                f"TEXTURE {forest_settings.texture_path}",
+                f"TEXTURE {self.texture_path}",
                 "",
                 f"LOD\t{forest_helpers.floatToStr(forest_settings.max_lod)}"
                 if forest_settings.has_max_lod

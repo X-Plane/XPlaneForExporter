@@ -4,14 +4,11 @@ from . import forest_constants
 
 class XPlaneForTreeSettings(bpy.types.PropertyGroup):
     frequency: bpy.props.FloatProperty(name="Frequency", min=0.0)
-    min_height: bpy.props.FloatProperty(name="Min. Tree Height", min=0.0)
     max_height: bpy.props.FloatProperty(name="Max. Tree Height", min=0.0)
-    # quads: bpy.props.IntProperty(min=1,max=2)
 
 
 class XPlaneForObjectSettings(bpy.types.PropertyGroup):
     tree: bpy.props.PointerProperty(type=XPlaneForTreeSettings)
-    pass
 
 
 class XPlaneForSkipSurfaceDirective(bpy.types.PropertyGroup):

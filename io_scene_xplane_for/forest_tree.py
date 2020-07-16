@@ -29,7 +29,7 @@ class ForestTree:
         self.forest_empty = forest_empty
         # TODO: Auto pick frequency feature
         self.frequency = forest_empty.xplane_for.tree.frequency
-        self.min_height = forest_empty.xplane_for.tree.min_height
+        self.min_height = 12.0
         self.max_height = forest_empty.xplane_for.tree.max_height
         self.quads = 0
         self.layer = _get_layer()
@@ -107,9 +107,12 @@ class ForestTree:
             print("--- dot ---")
             print(*(round(edge.dot(z_axis), 5) for edge in [left, right]))
             print("------------")
+            print("--- top left bottom right")
+            print(top, left, bottom, right, sep="\n")
 
-            ret =  (
-                all(round(v.co.z, 5) > 0.0 for v in b.verts)
+            ret = (
+                all(round(v.co.z, 5) == 0 for v in itertools.islice(b.verts, 2))
+                and round(top.z, 5) > 0
                 and round(sum(edge.dot(z_axis) for edge in [left, right]), 5) == 0.0
             )
             print("ret", ret)
@@ -140,19 +143,14 @@ class ForestTree:
                     print(child.name, "is not vertical")
 
                 if mesh_is_horizontal(child):
-                    try:
-                        self.horz_quad
-                    except AttributeError:
-                        print(child.name, "is horizontal")
-                        self.horz_quad = child
-                    else:
-                        print("Can't have 2 horz_y_quads")
+                    print(child.name, "is horizontal")
+                    self.horz_quad = child
                 else:
                     print(child.name, "is not horizontal")
 
-                if not self.vert_quad:
-                    print("error:", child.name, "vert not horizontal or vertical")
-                    raise ValueError
+        if not self.vert_quad:
+            print("error:", child.name, "vert not horizontal or vertical")
+            raise ValueError
 
         def set_vert_props():
             # 3---2
@@ -167,12 +165,12 @@ class ForestTree:
             ]
             pprint.pprint(
                 [
-                    (((uv.x * size_x), (uv.y * size_y)), label)
-                    for uv, label in zip(uvs, ["bl", "br", "tr", "tl"])
+                    ((round(uv.x * size_x), round(uv.y * size_y)), label)
+                    for uv, label in zip(uvs, ["bl", "br", "tl", "tr"])
                 ]
             )
             # TODO: Handle multiple faces at once
-            bl, br, tr, tl = uvs[:4]
+            bl, br, tl, tr = uvs[:4]
             # assert len(uvs) == 4
             self.tree_s, self.tree_t = (round(bl.x * size_x), round(bl.y * size_y))
             self.tree_w, self.tree_h = (
@@ -181,7 +179,7 @@ class ForestTree:
             )
             print("stwh", self.tree_s, self.tree_t, self.tree_w, self.tree_h)
             # TODO: middle offset idea
-            self.vert_offset = round(self.tree_w / 2)
+            self.vert_offset = round(self.tree_s + self.tree_w/2)
             print("<offset>", self.vert_offset)
 
         set_vert_props()
@@ -210,9 +208,10 @@ class ForestTree:
     def write(self) -> str:
         o = ""
         o += (
+            f"#TREE\t<s>\t<t>\t<w>\t<h>\t<offset>\t<frequency>\t<min h>\t<max h>\t<quads>\t<layer>\t<notes>\n"
             f"TREE\t{self.tree_s}\t{self.tree_t}\t{self.tree_w}\t{self.tree_h}"
-            f"\t{self.vert_offset}\t{self.frequency}"
-            f"\t{self.min_height}\t{self.max_height}"
+            f"\t{self.vert_offset}\t\t{self.frequency}"
+            f"\t\t{self.min_height}\t{self.max_height}"
             f"\t{self.quads}\t{self.layer}\t{self.forest_empty.name}"
         )
         if False and self.y_quad:
