@@ -105,6 +105,7 @@ class ForestTree:
         size_x, size_y = img.size
 
         depsgraph = bpy.context.evaluated_depsgraph_get()
+
         def get_bmesh_from_obj(obj: bpy.types.Object) -> bmesh.types.BMesh:
             b = bmesh.new()
             object_eval = obj.evaluated_get(depsgraph)
@@ -173,11 +174,12 @@ class ForestTree:
             # print(*( v for v in (vecs_of_edge(e) for e in b.edges)), sep="\n")
             z_axis = mathutils.Vector((0, 0, 1))
             top, left, bottom, right = map(edge_to_vec, b.edges)
+            # TODO: Validate left is <= 0 for offset purposes
             print("--- dot ---")
             print(*(round(edge.dot(z_axis), 5) for edge in [left, right]))
             print("------------")
-            print("--- top left bottom right")
             print(
+                "--- top left bottom right",
                 *zip([top, left, bottom, right,], ["top", "left", "bottom", "right"]),
                 sep="\n",
             )
@@ -229,7 +231,6 @@ class ForestTree:
 
             b.from_mesh(mesh_eval)
             b.transform(object_eval.matrix_world)
-            object_eval.to_mesh_clear()
             uvs = [
                 uv_loop.uv
                 for uv_loop in sorted(
@@ -260,14 +261,45 @@ class ForestTree:
                 self.vert_info.w,
                 self.vert_info.h,
             )
-            # TODO: middle offset idea
-            self.vert_info.offset = round(self.vert_info.s + self.vert_info.w / 2)
+            def vecs_of_edge(
+                edge: bmesh.types.BMEdge,
+            ) -> Tuple[mathutils.Vector, mathutils.Vector]:
+                return tuple(v.co for v in edge.verts)
+
+            def verts_from_edge_global(
+                edge: bpy.types.MeshEdge,
+            ) -> Tuple[mathutils.Vector, mathutils.Vector]:
+                return tuple(
+                    forest_helpers.round_vec(self.vert_quad.matrix_world.translation + self.vert_quad.data.vertices[vi].co) for vi in edge.vertices
+                )
+
+            left, bottom, right, top = [
+                verts_from_edge_global(edge)
+                for edge in self.vert_quad.data.edges
+            ]
+            print(
+                "--- top left bottom right",
+                *zip([top, left, bottom, right,], ["top", "left", "bottom", "right"]),
+                sep="\n",
+            )
+            print("origin (x)")
+            origin_x = self.vert_quad.matrix_world.translation.x
+            left_x = left[0].x
+            bottom_length = (bottom[0] - bottom[1]).length
+            uv_scale = self.vert_info.w
+
+
+            self.vert_info.offset = round(((origin_x-left_x)/bottom_length) * uv_scale)
+            print("offset")
+            print(self.vert_info.offset)
+
 
             self.vert_info.freq = forest_empty.xplane_for.tree.frequency
             self.vert_info.min_height = next(iter(b.edges)).calc_length()
             self.vert_info.max_height = forest_empty.xplane_for.tree.max_height
             self.vert_info.layer_number = _get_layer()
             self.vert_info.notes = forest_empty.name
+            object_eval.to_mesh_clear()
 
         set_vert_props()
 
@@ -300,16 +332,17 @@ class ForestTree:
                 round(tr.y * size_y) - self.horz_info.t,
             )
 
-            #TODO: Not quite right
-            self.horz_info.offset_center_x, self.horz_info.offset_center_y, _ = (
-                b.faces[:][0].calc_center_median()
-            )
+            # TODO: Not quite right
+            self.horz_info.offset_center_x, self.horz_info.offset_center_y, _ = b.faces[
+                :
+            ][0].calc_center_median()
             # Use bmesh of horz_quad
             self.horz_info.quad_width = 100
             self.horz_info.elevation = 50
             self.horz_info.psi_rotation = self.horz_quad.rotation_euler.z
 
-        set_horz_props()
+        if self.horz_quad:
+            set_horz_props()
 
     def collect(self) -> None:
         pass
@@ -321,7 +354,5 @@ class ForestTree:
             f"TREE\t{self.vert_info}\n"
         )
         if self.horz_quad:
-            o += (
-                f"Y_QUAD\t{self.horz_info}"
-            )
+            o += f"Y_QUAD\t{self.horz_info}"
         return o

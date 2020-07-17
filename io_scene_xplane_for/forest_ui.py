@@ -37,33 +37,12 @@ class SCENE_PT_io_scene_xplane_for(bpy.types.Panel):
         row.operator("export.xplane_for")
         box = self.layout.box()
         box.label(text="Root Forests")
-        try:
-            exportable = []
-            not_exportable = []
-            for is_exportable, group in itertools.groupby(
-                forest_helpers.get_collections_in_scene(scene)[1:],
-                key=lambda c: c.xplane_for.is_exportable_collection,
-            ):
-                if is_exportable:
-                    exportable = list(group)
-                else:
-                    not_exportable = list(group)
-
-        except (IndexError, TypeError) as e:  # Only 0 or 1 non-master collections
-            print(e)
-            pass
-        else:
-            for exportable_forest in exportable:
-                self._draw_collection(context, box, exportable_forest)
-            box = self.layout.box()
-            box.label(text="Non Root Forests")
-            for not_exportable_forest in not_exportable:
-                box = box.box()
-                column = box.column_flow(columns=2, align=True)
-                column.label(text=not_exportable_forest.name)
-                column.prop(
-                    not_exportable_forest.xplane_for, "is_exportable_collection"
-                )
+        for exportable_forest in [
+            col
+            for col in scene.collection.children
+            if forest_helpers.is_visible_in_viewport(col, bpy.context.view_layer)
+        ]:
+            self._draw_collection(context, box, exportable_forest)
 
     def _draw_collection(self, context, layout, collection):
         scene = context.scene
@@ -71,8 +50,6 @@ class SCENE_PT_io_scene_xplane_for(bpy.types.Panel):
         box = layout.box()
         column = box.column_flow(columns=2, align=True)
         column.label(text=collection.name)
-
-        column.prop(collection.xplane_for, "is_exportable_collection")
 
         box.prop(collection.xplane_for, "file_name")
 
@@ -90,6 +67,11 @@ class SCENE_PT_io_scene_xplane_for(bpy.types.Panel):
             lod_row.prop(forest, "max_lod")
 
         layout.row().prop(forest, "cast_shadow")
+
+        # Use Perlin Choice ? - Choice greyed out
+        # Use Perlin Choice ? - Choice greyed out
+        # Use Perlin Choice ? - Choice greyed out
+        # If any choices, draw groups percent table
 
 
 register, unregister = bpy.utils.register_classes_factory(

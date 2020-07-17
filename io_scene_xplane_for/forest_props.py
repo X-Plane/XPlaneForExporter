@@ -58,7 +58,6 @@ class XPlaneForForestSettings(bpy.types.PropertyGroup):
 
 
 class XPlaneForCollectionSettings(bpy.types.PropertyGroup):
-    is_exportable_collection: bpy.props.BoolProperty(name="Root Forest", default=False)
     forest: bpy.props.PointerProperty(type=XPlaneForForestSettings)
     file_name: bpy.props.StringProperty(
         name="File Name",

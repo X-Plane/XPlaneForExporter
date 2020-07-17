@@ -22,7 +22,9 @@ class ForestFile:
         for forest_empty in [
             obj
             for obj in self._root_collection.all_objects
-            if obj.type == "EMPTY" and (0 < len(obj.children) <= 2)
+            if obj.type == "EMPTY"
+            and (0 < len(obj.children) <= 2)
+            and forest_helpers.is_visible_in_viewport(obj, bpy.context.view_layer)
         ]:
             t = forest_tree.ForestTree(forest_empty)
             t.collect()
@@ -37,12 +39,14 @@ class ForestFile:
                 .image
             )
         except (IndexError):
-            print("You didn't have at least one tree with an Image Texture for the base color node")
+            print(
+                "You didn't have at least one tree with an Image Texture for the base color node"
+            )
             return
         else:
             self.scale_x, self.scale_y = img.size
 
-            self.texture_path = bpy.path.relpath(img.filepath).replace("//","")
+            self.texture_path = bpy.path.relpath(img.filepath).replace("//", "")
 
     def write(self):
         debug = True

@@ -78,9 +78,8 @@ def get_exportable_roots_in_scene(
 ) -> List[ExportableRoot]:
     return [
         root
-        for root in filter(
-            lambda o: is_exportable_root(o, view_layer), get_collections_in_scene(scene)
-        )
+        for root in scene.collection.children
+        if is_visible_in_viewport(root, view_layer)
     ]
 
 
@@ -89,12 +88,16 @@ def get_plugin_resources_folder() -> str:
 
 
 def is_visible_in_viewport(
-    datablock: bpy.types.Collection, view_layer: bpy.types.ViewLayer
+    datablock: Union[bpy.types.Collection, bpy.types.Object],
+    view_layer: bpy.types.ViewLayer,
 ) -> Optional[ExportableRoot]:
-    all_layer_collections = {
-        c.name: c for c in get_layer_collections_in_view_layer(view_layer)
-    }
-    return all_layer_collections[datablock.name].is_visible
+    if isinstance(datablock, bpy.types.Collection):
+        all_layer_collections = {
+            c.name: c for c in get_layer_collections_in_view_layer(view_layer)
+        }
+        return all_layer_collections[datablock.name].is_visible
+    else:
+        return datablock.visible_get(view_layer=view_layer)
 
 
 def is_exportable_root(
@@ -105,12 +108,12 @@ def is_exportable_root(
     we have to provide it
     """
     return (
-        potential_root.xplane_for.is_exportable_collection
+        potential_root in bpy.context.scene.collection.children
         and is_visible_in_viewport(potential_root, view_layer)
     )
 
 
-def round_vec(v: mathutils.Vector, ndigits: int) -> mathutils.Vector:
+def round_vec(v: mathutils.Vector, ndigits: int=5) -> mathutils.Vector:
     return mathutils.Vector(round(comp, ndigits) for comp in v)
 
 
