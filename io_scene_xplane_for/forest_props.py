@@ -3,12 +3,17 @@ from . import forest_constants
 
 
 class XPlaneForTreeSettings(bpy.types.PropertyGroup):
+    # TODO remove and replace with weight within layer
     frequency: bpy.props.FloatProperty(name="Frequency", min=0.0)
     max_height: bpy.props.FloatProperty(name="Max. Tree Height", min=0.0)
 
 
 class XPlaneForObjectSettings(bpy.types.PropertyGroup):
-    tree: bpy.props.PointerProperty(type=XPlaneForTreeSettings)
+    tree: bpy.props.PointerProperty(
+        type=XPlaneForTreeSettings,
+        name="Tree Settings",
+        description="Settings for a tree that an empty represents",
+    )
 
 
 class XPlaneForSkipSurfaceDirective(bpy.types.PropertyGroup):
@@ -22,8 +27,68 @@ class XPlaneForSkipSurfaceDirective(bpy.types.PropertyGroup):
     )
 
 
+class XPlaneForPerlinParameters(bpy.types.PropertyGroup):
+    wavelength_amp_1: bpy.props.FloatVectorProperty(
+        name="1st Distribution And Amplitude Pair",
+        description="Perlin Spread and Amplitude",
+        precision=3,
+        size=2,
+    )
+    wavelength_amp_2: bpy.props.FloatVectorProperty(
+        name="2nd Distribution And Amplitude Pair",
+        description="Perlin Spread and Amplitude",
+        precision=3,
+        size=2,
+    )
+    wavelength_amp_3: bpy.props.FloatVectorProperty(
+        name="3rd Distribution And Amplitude Pair",
+        description="Perlin Spread and Amplitude",
+        precision=3,
+        size=2,
+    )
+    wavelength_amp_4: bpy.props.FloatVectorProperty(
+        name="4th Distribution And Amplitude Pair",
+        description="Perlin Spread and Amplitude",
+        precision=3,
+        size=2,
+    )
+
+
 class XPlaneForForestSettings(bpy.types.PropertyGroup):
-    cast_shadow: bpy.props.BoolProperty(name="Cast Shadow", default=True)
+    has_perlin_density: bpy.props.BoolProperty(
+        name="Density Params",
+        description="Turns on DENSITY_PARAMS and Groups",
+        default=False,
+    )
+    has_perlin_choice: bpy.props.BoolProperty(
+        name="Choice Params",
+        description="Turns on CHOICE_PARAMS and Groups",
+        default=False,
+    )
+    has_perlin_height: bpy.props.BoolProperty(
+        name="Height Params",
+        description="Turns on HEIGHT_PARAMS and Groups",
+        default=False,
+    )
+    perlin_density: bpy.props.PointerProperty(
+        type=XPlaneForPerlinParameters,
+        name="Density Options",
+        description="Perlin pattern affected by density and DSF settings, only for partially dense forests",
+    )
+    perlin_choice: bpy.props.PointerProperty(
+        type=XPlaneForPerlinParameters,
+        name="Choice Options",
+        description="Perlin pattern that makes stands of groups of trees",
+    )
+    perlin_height: bpy.props.PointerProperty(
+        type=XPlaneForPerlinParameters,
+        name="Height Options",
+        description="Perlin pattern that makes clusters of tree heights",
+    )
+
+    cast_shadow: bpy.props.BoolProperty(
+        name="Cast Shadow", description="Trees in forest cast shadows", default=True
+    )
     has_max_lod: bpy.props.BoolProperty(
         name="Has Max LOD", description="If true, a maximum LOD is used", default=False
     )
@@ -36,7 +101,12 @@ class XPlaneForForestSettings(bpy.types.PropertyGroup):
         min=0,
         size=2,
     )
-    spacing: bpy.props.IntVectorProperty(name="Spacing", min=0, size=2)
+    spacing: bpy.props.IntVectorProperty(
+        name="Spacing",
+        description="How far apart, in meters, trees are spread",
+        min=0,
+        size=2,
+    )
     surfaces_to_skip: bpy.props.CollectionProperty(
         type=XPlaneForSkipSurfaceDirective,
         description="Collection of surface types to skip, repeats not printed twice",
@@ -66,19 +136,13 @@ class XPlaneForCollectionSettings(bpy.types.PropertyGroup):
     )
 
 
-class XPlaneForSceneSettings(bpy.types.PropertyGroup):
-    # TODO: This should be a collection
-    # forests:bpy.props.CollectionProperty(XPlaneForForestSettings)
-    pass
-
-
 _classes = (
+    XPlaneForPerlinParameters,
     XPlaneForTreeSettings,
     XPlaneForSkipSurfaceDirective,
     XPlaneForForestSettings,
     XPlaneForObjectSettings,
     XPlaneForCollectionSettings,
-    XPlaneForSceneSettings,
 )
 
 
@@ -90,10 +154,8 @@ def register():
         type=XPlaneForCollectionSettings, name=".for Collection Settings"
     )
 
-    bpy.types.Object.xplane_for = bpy.props.PointerProperty(type=XPlaneForObjectSettings)
-
-    bpy.types.Scene.xplane_for = bpy.props.PointerProperty(
-        type=XPlaneForSceneSettings, name=".for Scene Settings"
+    bpy.types.Object.xplane_for = bpy.props.PointerProperty(
+        type=XPlaneForObjectSettings, name=".for Object Settings"
     )
 
 

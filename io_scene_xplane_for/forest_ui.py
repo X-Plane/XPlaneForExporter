@@ -16,7 +16,6 @@ class OBJECT_PT_io_scene_xplane_for(bpy.types.Panel):
     def draw(self, context):
         tree = context.object.xplane_for.tree
         self.layout.prop(tree, "frequency")
-        self.layout.prop(tree, "min_height")
         self.layout.prop(tree, "max_height")
 
 
@@ -68,10 +67,34 @@ class SCENE_PT_io_scene_xplane_for(bpy.types.Panel):
 
         layout.row().prop(forest, "cast_shadow")
 
-        # Use Perlin Choice ? - Choice greyed out
-        # Use Perlin Choice ? - Choice greyed out
-        # Use Perlin Choice ? - Choice greyed out
-        # If any choices, draw groups percent table
+        def draw_perlin_params(row, pointer_prop, enabled):
+            column = row.column_flow(columns=4, align=True)
+            column.enabled = enabled
+            column.prop(pointer_prop, "wavelength_amp_1", text="1st")
+            column.prop(pointer_prop, "wavelength_amp_2", text="2nd")
+            column.prop(pointer_prop, "wavelength_amp_3", text="3rd")
+            column.prop(pointer_prop, "wavelength_amp_4", text="4th")
+
+        box = layout.box()
+        box.label(
+            text="Perlin distribution and amplitude given as pairs in each column"
+        )
+        den = box.row()
+        den.prop(forest, "has_perlin_density")
+        den = box.row()
+        draw_perlin_params(den, forest.perlin_density, forest.has_perlin_density)
+        choice = layout.row()
+        choice.prop(forest, "has_perlin_choice")
+        choice = layout.row()
+        draw_perlin_params(choice, forest.perlin_choice, forest.has_perlin_choice)
+        height = layout.row()
+        height.prop(forest, "has_perlin_height")
+        height = layout.row()
+        draw_perlin_params(height, forest.perlin_height, forest.has_perlin_height)
+
+        # TODO: If any choices, draw groups percent table
+        if any((forest.perlin_density, forest.perlin_choice, forest.perlin_height)):
+            pass
 
 
 register, unregister = bpy.utils.register_classes_factory(

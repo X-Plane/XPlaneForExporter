@@ -10,24 +10,21 @@ bl_info = {
     "category": "Import-Export",
 }
 
+import bpy
 
-if "bpy" in locals():
-    import importlib
-
-    importlib.reload(forest_helpers)
-    importlib.reload(forest_props)
-    importlib.reload(forest_export)
-    importlib.reload(forest_ui)
-    # imp.reload(xplane_ops)
-    # imp.reload(xplane_ops_dev)
-    # imp.reload(xplane_config)
-    # imp.reload(xplane_updater)
-else:
-    import bpy
+if "forest_props" not in locals():
     from . import forest_helpers
     from . import forest_props
     from . import forest_export
     from . import forest_ui
+
+else:
+    import importlib
+
+    forest_helpers = importlib.reload(forest_helpers)
+    forest_props = importlib.reload(forest_props)
+    forest_export = importlib.reload(forest_export)
+    forest_ui = importlib.reload(forest_ui)
 
 
 def menu_func(self, context):

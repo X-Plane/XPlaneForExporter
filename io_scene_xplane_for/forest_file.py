@@ -18,6 +18,30 @@ class ForestFile:
         self.scale_x: int = None
         self.scale_y: int = None
 
+        def get_params(perlin_type: str):
+            """perlin_type is perlin_density, perlin_choice, perlin_height"""
+            has_param = getattr(
+                self._root_collection.xplane_for.forest, "has_" + perlin_type
+            )
+            if has_param:
+                perlin_group = getattr(
+                    self._root_collection.xplane_for.forest, perlin_type
+                )
+                return list(
+                    itertools.chain(
+                        perlin_group.wavelength_amp_1,
+                        perlin_group.wavelength_amp_2,
+                        perlin_group.wavelength_amp_3,
+                        perlin_group.wavelength_amp_4,
+                    )
+                )
+            else:
+                return None
+
+        self.perlin_density: Optional[List[float]] = get_params("perlin_density")
+        self.perlin_choice: Optional[List[float]] = get_params("perlin_choice")
+        self.perlin_height: Optional[List[float]] = get_params("perlin_height")
+
     def collect(self):
         for forest_empty in [
             obj
@@ -51,12 +75,27 @@ class ForestFile:
     def write(self):
         debug = True
         forest_settings = self._root_collection.xplane_for.forest
+
+        def fmt_perlin_params(directive, perlin_params):
+            try:
+                s = f"{directive} " + (
+                    "\t".join(
+                        " ".join(
+                            map(forest_helpers.floatToStr, p)
+                        )
+                        for p in zip(perlin_params[:-1:2], perlin_params[1::2])
+                    )
+                )
+                return s
+            except (AttributeError, TypeError) as e:
+                return ""
+
         o = "\n".join(
             (
                 "A",
                 "800",
                 "FOREST",
-                f"TEXTURE {self.texture_path}",
+                f"TEXTURE {self.texture_file}",
                 "",
                 f"LOD\t{forest_helpers.floatToStr(forest_settings.max_lod)}"
                 if forest_settings.has_max_lod
@@ -67,6 +106,9 @@ class ForestFile:
                 f"RANDOM\t{' '.join(map(forest_helpers.floatToStr,forest_settings.randomness))}",
                 f"{'' if forest_settings.cast_shadow else 'NO_SHADOW'}",
                 "",
+                fmt_perlin_params("DENSITY_PARAMS", self.perlin_density),
+                fmt_perlin_params("CHOICE_PARAMS", self.perlin_choice),
+                fmt_perlin_params("HEIGHT_PARAMS", self.perlin_height),
             )
         )
 
