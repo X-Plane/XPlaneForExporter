@@ -13,15 +13,6 @@ import mathutils
 
 from . import forest_helpers
 
-_layer = 0
-
-
-def _get_layer():
-    global _layer
-    l = _layer
-    _layer += 1
-    return l
-
 
 @dataclasses.dataclass
 class TreeStruct:
@@ -84,9 +75,7 @@ class YQuadStruct:
 
 
 class ForestTree:
-    def __init__(
-        self, forest_empty: bpy.types.Object,
-    ):
+    def __init__(self, forest_empty: bpy.types.Object, layer_number: int):
         self.forest_empty = forest_empty
         # TODO: Auto pick frequency feature
         self.vert_info = TreeStruct(*([0] * 11))
@@ -215,11 +204,10 @@ class ForestTree:
                     print(child.name, "is horizontal")
                     self.horz_quad = child
                 else:
-                    print(child.name, "is not vertical, or horizontal")
-                    print(child.name, "is not horizontal")
+                    print(child.name, "is not vertical or horizontal")
 
         if not self.vert_quad:
-            print("error:", child.name, "vert not horizontal or vertical")
+            print("error:", child.name, "does not appear to have a vertical quad")
             raise ValueError
 
         def set_vert_props():
@@ -238,12 +226,12 @@ class ForestTree:
                     key=lambda uv_loop: uv_loop.uv,
                 )
             ]
-            pprint.pprint(
-                [
-                    ((round(uv.x * size_x), round(uv.y * size_y)), label)
-                    for uv, label in zip(uvs, ["bl", "br", "tl", "tr"])
-                ]
-            )
+            #pprint.pprint(
+                #[
+                    #((round(uv.x * size_x), round(uv.y * size_y)), label)
+                    #for uv, label in zip(uvs, ["bl", "br", "tl", "tr"])
+                #]
+            #)
             # TODO: Handle multiple faces at once
             bl, br, tl, tr = uvs[:4]
             self.vert_info.s, self.vert_info.t = (
@@ -270,12 +258,15 @@ class ForestTree:
                 edge: bpy.types.MeshEdge,
             ) -> Tuple[mathutils.Vector, mathutils.Vector]:
                 return tuple(
-                    forest_helpers.round_vec(self.vert_quad.matrix_world.translation + self.vert_quad.data.vertices[vi].co) for vi in edge.vertices
+                    forest_helpers.round_vec(
+                        self.vert_quad.matrix_world.translation
+                        + self.vert_quad.data.vertices[vi].co
+                    )
+                    for vi in edge.vertices
                 )
 
             left, bottom, right, top = [
-                verts_from_edge_global(edge)
-                for edge in self.vert_quad.data.edges
+                verts_from_edge_global(edge) for edge in self.vert_quad.data.edges
             ]
             print(
                 "--- top left bottom right",
@@ -288,16 +279,16 @@ class ForestTree:
             bottom_length = (bottom[0] - bottom[1]).length
             uv_scale = self.vert_info.w
 
-
-            self.vert_info.offset = round(((origin_x-left_x)/bottom_length) * uv_scale)
+            self.vert_info.offset = round(
+                ((origin_x - left_x) / bottom_length) * uv_scale
+            )
             print("offset")
             print(self.vert_info.offset)
-
 
             self.vert_info.freq = forest_empty.xplane_for.tree.frequency
             self.vert_info.min_height = next(iter(b.edges)).calc_length()
             self.vert_info.max_height = forest_empty.xplane_for.tree.max_height
-            self.vert_info.layer_number = _get_layer()
+            self.vert_info.layer_number = layer_number
             self.vert_info.notes = forest_empty.name
             object_eval.to_mesh_clear()
 
@@ -322,24 +313,49 @@ class ForestTree:
                 )
             ]
 
-            bl, br, tl, tr = uvs[:4]
+            )
+            bl_uv, br_uv, tl_uv, tr_uv = sorted(uvs[:4])
             self.horz_info.s, self.horz_info.t = (
-                round(bl.x * size_x),
-                round(bl.y * size_y),
+                round(bl_uv.x * size_x),
+                round(bl_uv.y * size_y),
             )
             self.horz_info.w, self.horz_info.h = (
-                round(tr.x * size_y) - self.horz_info.s,
-                round(tr.y * size_y) - self.horz_info.t,
+                round(tr_uv.x * size_x) - self.horz_info.s,
+                round(tr_uv.y * size_y) - self.horz_info.t,
             )
 
-            # TODO: Not quite right
-            self.horz_info.offset_center_x, self.horz_info.offset_center_y, _ = b.faces[
-                :
-            ][0].calc_center_median()
-            # Use bmesh of horz_quad
-            self.horz_info.quad_width = 100
-            self.horz_info.elevation = 50
-            self.horz_info.psi_rotation = self.horz_quad.rotation_euler.z
+            def verts_from_edge_global(
+                edge: bpy.types.MeshEdge,
+            ) -> Tuple[mathutils.Vector, mathutils.Vector]:
+                return tuple(
+                    forest_helpers.round_vec(
+                        self.horz_quad.matrix_world.translation
+                        + self.horz_quad.data.vertices[vi].co
+                    )
+                    for vi in edge.vertices
+                )
+
+            left, bottom, right, top = [
+                verts_from_edge_global(edge) for edge in self.horz_quad.data.edges
+            ]
+            origin = self.horz_quad.matrix_world.translation.xy
+            bl_meters = left[1].xy
+            bottom_length = (bottom[0] - bottom[1]).length
+            left_length = (left[0] - left[1]).length
+            uv_scale = mathutils.Vector((self.horz_info.w, self.horz_info.h))
+            self.horz_info.offset_center_x, self.horz_info.offset_center_y = (
+                round(((origin.x - bl_meters.x) / bottom_length) * uv_scale.x),
+                round(((origin.y - bl_meters.y) / left_length) * uv_scale.y),
+            )
+
+            self.horz_info.quad_width = bottom_length * self.vert_info.h
+            percent_of_way_up_tree_m = self.horz_quad.matrix_world.translation.z/self.vert_info.min_height
+            self.horz_info.elevation = round(
+                 percent_of_way_up_tree_m * self.vert_info.h
+            )
+            self.horz_info.psi_rotation = round(
+                math.degrees(self.horz_quad.rotation_euler.z)
+            )
 
         if self.horz_quad:
             set_horz_props()
@@ -354,5 +370,8 @@ class ForestTree:
             f"TREE\t{self.vert_info}\n"
         )
         if self.horz_quad:
-            o += f"Y_QUAD\t{self.horz_info}"
+            o += (
+                f"#Y_QUAD\t<left>	<bottom>	<width>	<height>	<offset_center_x>	<offset_center_y>	<width>	<elevation>	<rotation>\n"
+                f"Y_QUAD\t{self.horz_info}"
+            )
         return o

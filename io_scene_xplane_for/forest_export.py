@@ -11,7 +11,8 @@ import bpy
 import mathutils
 from bpy_extras.io_utils import ExportHelper, ImportHelper
 
-from . import forest_file, forest_helpers, forest_tree
+from io_scene_xplane_for import forest_file, forest_helpers, forest_tree, forest_logger
+from io_scene_xplane_for.forest_logger import logger
 
 
 class EXPORT_OT_XPlaneFor(bpy.types.Operator, ExportHelper):
@@ -32,19 +33,7 @@ class EXPORT_OT_XPlaneFor(bpy.types.Operator, ExportHelper):
     def execute(self, context):
         debug = True
         # self._startLogging()
-        # --- collect ---
-        def collect_files() -> List[forest_file.ForestFile]:
-            forest_files = []
-            for col in forest_helpers.get_exportable_roots_in_scene(
-                bpy.context.scene, bpy.context.view_layer
-            ):
-                ff = forest_file.ForestFile(col)
-                ff.collect()
-                forest_files.append(ff)
-            return forest_files
-
-        forest_files = collect_files()
-        # ---------------
+        forest_files = forest_file.collect_potential_forest_files()
 
         # --- write -----
         def write_to_disk(forest_file) -> None:
@@ -68,8 +57,7 @@ class EXPORT_OT_XPlaneFor(bpy.types.Operator, ExportHelper):
             try:
                 os.makedirs(os.path.dirname(final_path), exist_ok=True)
             except OSError as e:
-                print(e)
-                # logger.error(e)
+                logger.error(e)
                 raise
             else:
                 with open(final_path, "w") as f:

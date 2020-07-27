@@ -1,4 +1,7 @@
 import bpy
+import enum
+from typing import IO, List, Optional
+import dataclasses
 
 message_to_str_count = 0
 """
@@ -18,93 +21,131 @@ non-existant bug
 """
 
 
-class Logger:
-    def __init__(self):
-        self.transports = []
-        self.messages = []
+class MessageTypes(enum.Enum):
+    INFO: "info"
+    WARNING: "warning"
+    ERROR: "error"
+    SUCCESS: "success"
+
+
+class MessageCodes(enum.Enum):
+    """
+    The unit test uses these error codes to test that specific errors/warnings/etc occured.
+    Renumbering these will probably break tests. The naming convention is important, In case a message isn't given, the code's
+    fallback message is the enum value
+    """
+
+    # 0-99 - general exporter things
+    # 100-999 - global file problems
+    #
+    E000 = "Uknown error"
+    S000 = ".for exported successfully"
+
+
+class _Singleton(type):
+    _instances: Optional["_Singleton"] = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(_Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+
+class ForestLogger(metaclass=_Singleton):
+    @dataclasses.dataclass
+    class Message:
+        msg_code: MessageCodes
+        msg_type: MessageTypes
+        msg_content: str
+        msg_context: str
+
+        def __str__(self) -> str:
+            return f"{self.msg_code.name}: {self.msg_content or self.msg_code.value}"
+
+    class ConsoleTransport:
+        def __init__(self):
+            self.count = 0
+
+        def __call__(self, msg: "ForestLogger.Message") -> None:
+            if self.count == 1:
+                print()
+            print(str(msg))
+            self.count += 1
+
+    class FileTransport:
+        def __init__(self, filehandle: IO):
+            self.filehandle = filehandle
+
+        def __call__(self, msg: "ForestLogger.Message") -> None:
+            try:
+                self.filehandle.write(str(msg) + "\n")
+            except IOError as ioe:
+                assert False, "File transport failed:\n" + ioe
+
+    class InternalTextTransport:
+        def __init__(self, name="XPlane2Blender.log") -> None:
+            if bpy.data.texts.find(name) == -1:
+                self.log_txt_block = bpy.data.texts.new(name)
+            else:
+                self.log_txt_block = bpy.data.texts[name]
+
+            self.log_txt_block.clear()
+
+        def __call__(self, msg: "ForestLogger.Message") -> None:
+            self.log_txt_block.write(f"{msg}\n")
+
+    def __init__(self, transports: Optional = None, msg_types=None):
+        self.transports = transports or [ForestLogger.ConsoleTransport()]
+        self._messages: List["ForestLogger.Message"] = []
+        self.msg_types = msg_types or list(MessageTypes)
+
+    def reset(self, transports: Optional = None, msg_types=None):
+        self.transports = transports or [ForestLogger.ConsoleTransport()]
+        self._messages.clear()
+        self.msg_types = msg_types or list(MessageTypes)
+
+    def log(self, msg_code:MessageCodes, msg_type: MessageTypes, msg_content, msg_context=None):
+        if msg_type in self.msg_types:
+            msg = ForestLogger.Message(
+                msg_code=msg_code, msg_type=msg_type, msg_content=msg_content, msg_context=msg_context
+            )
+            self._messages.append(msg)
+            for transport in self.transports:
+                transport(msg)
+        else:
+            pass
+
+    def error(self, code: int, message: str, context=None):
+        self.log(code, MessageTypes.ERROR, message, context)
+
+    def warn(self, code: int, message: str, context=None):
+        self.log(code, MessageTypes.WARNING, message, context)
+
+    def info(self, code: int, message: str, context=None):
+        self.log(code, MessageTypes.INFO, message, context)
+
+    def success(self, code: int, message: str, context=None):
+        self.log(code, MessageTypes.SUCCESS, message, context)
 
     @property
-    def errors(self):
-        return [m["message"] for m in self.messages if m["type"] == "error"]
+    def messages(self):
+        return self._messages.copy()
 
     @property
     def infos(self):
-        return [m["message"] for m in self.messages if m["type"] == "info"]
-
-    @property
-    def successes(self):
-        return [m["message"] for m in self.messages if m["type"] == "success"]
+        return [m for m in self.messages if m.msg_type == MessageTypes.INFO]
 
     @property
     def warnings(self):
-        return [m["message"] for m in self.messages if m["type"] == "warning"]
+        return [m for m in self.messages if m.msg_type == MessageTypes.SUCCESS]
 
-    def addTransport(
-        self, transport, messageTypes=["error", "warning", "info", "success"]
-    ):
-        self.transports.append({"fn": transport, "types": messageTypes})
+    @property
+    def errors(self):
+        return [m for m in self.messages if m.msg_type == MessageTypes.ERROR]
 
-    def clear(self):
-        self.transports.clear()
-        self.messages.clear()
-
-    def log(self, messageType, message, context=None):
-        self.messages.append(
-            {"type": messageType, "message": message, "context": context}
-        )
-
-        for transport in self.transports:
-            if messageType in transport["types"]:
-                transport["fn"](messageType, message, context)
-
-    def error(self, message, context=None):
-        self.log("error", message, context)
-
-    def warn(self, message, context=None):
-        self.log("warning", message, context)
-
-    def info(self, message, context=None):
-        self.log("info", message, context)
-
-    def success(self, message, context=None):
-        self.log("success", message, context)
-
-    @staticmethod
-    def messageToString(messageType, message, context=None):
-        # message_to_str_count += 1
-        return "%s: %s" % (messageType.upper(), message)
-
-    @staticmethod
-    def InternalTextTransport(name="XPlaneForExporter.log"):
-        if bpy.data.texts.find(name) == -1:
-            log = bpy.data.texts.new(name)
-        else:
-            log = bpy.data.texts[name]
-
-        log.clear()
-
-        def transport(messageType, message, context=None):
-            log.write(Logger.messageToString(messageType, message, context) + "\n")
-
-        return transport
-
-    @staticmethod
-    def ConsoleTransport():
-        def transport(messageType, message, context=None):
-            # if io_xplane2blender.xplane_helpers.message_to_str_count == 1:
-            # print('\n')
-            print(Logger.messageToString(messageType, message, context))
-
-        return transport
-
-    @staticmethod
-    def FileTransport(filehandle):
-        def transport(messageType, message, context=None):
-            filehandle.write(
-                Logger.messageToString(messageType, message, context) + "\n"
-            )
-
-        return transport
+    @property
+    def successes(self):
+        return [m for m in self.messages if m.msg_type == MessageTypes.SUCCESS]
 
 
-logger = Logger()
+logger = ForestLogger()

@@ -1,10 +1,23 @@
+import itertools
 import pathlib
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 import bpy
 
 from . import forest_helpers, forest_tree
 
+def collect_potential_forest_files() -> List["forest_file.ForestFile"]:
+    forest_files = []
+    for exportable_root in forest_helpers.get_exportable_roots_in_scene(
+        bpy.context.scene, bpy.context.view_layer
+    ):
+        forest_files.append(collect_forest_single_file(exportable_root))
+    return forest_files
+
+def collect_forest_single_file(exportable_root:forest_helpers.ExportableRoot):
+    ff = ForestFile(exportable_root)
+    ff.collect()
+    return ff
 
 class ForestFile:
     def __init__(self, root_collection: bpy.types.Collection):
@@ -13,8 +26,10 @@ class ForestFile:
         # self.random = root_collection.xplane_for.random
         self._root_collection = root_collection
         file_name = self._root_collection.xplane_for.file_name
-        self.file_name = file_name if file_name else self._root_collection.name
-        self.texture_file: pathlib.Path = pathlib.Path()
+        self.file_name = (
+            file_name if file_name else self._root_collection.name
+        )
+        self.texture_path: pathlib.Path = pathlib.Path()
         self.scale_x: int = None
         self.scale_y: int = None
 
@@ -43,16 +58,26 @@ class ForestFile:
         self.perlin_height: Optional[List[float]] = get_params("perlin_height")
 
     def collect(self):
-        for forest_empty in [
-            obj
-            for obj in self._root_collection.all_objects
-            if obj.type == "EMPTY"
-            and (0 < len(obj.children) <= 2)
-            and forest_helpers.is_visible_in_viewport(obj, bpy.context.view_layer)
-        ]:
-            t = forest_tree.ForestTree(forest_empty)
-            t.collect()
-            self.trees.append(t)
+        for layer_number_provider in self._root_collection.children:
+            for forest_empty in [
+                obj
+                for obj in layer_number_provider.all_objects
+                if obj.type == "EMPTY"
+                and (0 < len(obj.children) <= 3)
+                and forest_helpers.is_visible_in_viewport(obj, bpy.context.view_layer)
+            ]:
+                try:
+                    layer_number = int(layer_number_provider.name.split()[0])
+                    if layer_number < 0:
+                        raise ValueError
+                except ValueError:
+                    print(
+                        f"error: {layer_number_provider} doesn't have a int then a space"
+                    )
+                else:
+                    t = forest_tree.ForestTree(forest_empty, layer_number)
+                    t.collect()
+                    self.trees.append(t)
 
         try:
             img = (
@@ -80,9 +105,7 @@ class ForestFile:
             try:
                 s = f"{directive} " + (
                     "\t".join(
-                        " ".join(
-                            map(forest_helpers.floatToStr, p)
-                        )
+                        " ".join(map(forest_helpers.floatToStr, p))
                         for p in zip(perlin_params[:-1:2], perlin_params[1::2])
                     )
                 )
@@ -95,7 +118,7 @@ class ForestFile:
                 "A",
                 "800",
                 "FOREST",
-                f"TEXTURE {self.texture_file}",
+                f"TEXTURE {self.texture_path}",
                 "",
                 f"LOD\t{forest_helpers.floatToStr(forest_settings.max_lod)}"
                 if forest_settings.has_max_lod
@@ -109,6 +132,7 @@ class ForestFile:
                 fmt_perlin_params("DENSITY_PARAMS", self.perlin_density),
                 fmt_perlin_params("CHOICE_PARAMS", self.perlin_choice),
                 fmt_perlin_params("HEIGHT_PARAMS", self.perlin_height),
+                "",
             )
         )
 

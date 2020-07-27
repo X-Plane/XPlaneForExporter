@@ -14,6 +14,7 @@ import bpy
 
 if "forest_props" not in locals():
     from . import forest_helpers
+    from . import forest_logger
     from . import forest_props
     from . import forest_export
     from . import forest_ui
@@ -22,6 +23,7 @@ else:
     import importlib
 
     forest_helpers = importlib.reload(forest_helpers)
+    forest_logger = importlib.reload(forest_logger)
     forest_props = importlib.reload(forest_props)
     forest_export = importlib.reload(forest_export)
     forest_ui = importlib.reload(forest_ui)
