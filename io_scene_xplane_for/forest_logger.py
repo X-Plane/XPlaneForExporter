@@ -1,6 +1,6 @@
 import bpy
 import enum
-from typing import Any, IO, List, Optional
+from typing import Any, Callable, IO, List, Optional
 import dataclasses
 
 message_to_str_count = 0
@@ -79,7 +79,7 @@ class ForestLogger(metaclass=_Singleton):
 
         @property
         def msg_type(self):
-            return {t.name: t.value for t in MessageTypes}[self.msg_code.name[0]]
+            return {t.name[0]: t.value for t in MessageTypes}[self.msg_code.name[0]]
 
     class ConsoleTransport:
         def __init__(self):

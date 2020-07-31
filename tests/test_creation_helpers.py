@@ -20,17 +20,12 @@ from collections import namedtuple
 from typing import *
 
 import bpy
-
 from mathutils import Euler, Quaternion, Vector
 
 from io_scene_xplane_for import forest_helpers
-from io_scene_xplane_for.forest_helpers import (
-    ExportableRoot,
-    PotentialRoot,
-)
-
-# from io_scene_xplane_for.forest_constants
-from io_scene_xplane_for.forest_logger import logger, ForestLogger
+from io_scene_xplane_for.forest_helpers import ExportableRoot, PotentialRoot
+#from io_scene_xplane_for.forest_constants
+from io_scene_xplane_for.forest_logger import ForestLogger, logger
 
 # Rotations, when in euler's, are in angles, and get transformed when they need to.
 
@@ -594,7 +589,6 @@ def set_collection(
 
     if blender_object.name not in coll.objects:
         coll.objects.link(blender_object)
-
 
 def set_material(
     blender_object: bpy.types.Object,

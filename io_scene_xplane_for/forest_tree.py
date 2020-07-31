@@ -39,8 +39,14 @@ class TreeStruct:
                 )
 
     def __str__(self) -> str:
+        def fmt(s):
+            try:
+                return forest_helpers.floatToStr(float(s))
+            except (TypeError, ValueError):
+                return s
+
         return "\t".join(
-            str(value)
+            fmt(value)
             for attr, value in vars(self).items()
             if not attr.startswith("__")
         )

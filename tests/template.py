@@ -1,12 +1,15 @@
 import inspect
 import os
+import pprint
 import sys
 from typing import Tuple
 
 import bpy
 
+import io_scene_xplane_for
 import tests
-from tests import test_helpers
+from io_scene_xplane_for.forest_logger import MessageCodes, logger
+from tests import ForestTestCase, runTestCases
 
 _dirname = os.path.dirname(__file__)
 

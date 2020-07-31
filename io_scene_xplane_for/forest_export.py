@@ -3,7 +3,6 @@
 import os
 import os.path
 import sys
-
 # from .xplane_config import getDebug
 # from .xplane_helpers import XPlaneLogger, logger
 from typing import IO, Any, List, Optional
@@ -12,8 +11,8 @@ import bpy
 import mathutils
 from bpy_extras.io_utils import ExportHelper, ImportHelper
 
-from io_scene_xplane_for import forest_file, forest_helpers, forest_tree, forest_logger
-from io_scene_xplane_for.forest_logger import logger, MessageCodes
+from io_scene_xplane_for import forest_file, forest_helpers, forest_logger, forest_tree
+from io_scene_xplane_for.forest_logger import MessageCodes, logger
 
 
 class EXPORT_OT_XPlaneFor(bpy.types.Operator, ExportHelper):

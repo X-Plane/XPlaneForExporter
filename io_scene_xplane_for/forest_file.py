@@ -1,11 +1,12 @@
 import itertools
 import pathlib
-from typing import Dict, List, Tuple, Optional
+import pprint
+from typing import Dict, List, Optional, Tuple
 
 import bpy
 
 from io_scene_xplane_for import forest_helpers, forest_logger, forest_tree
-from io_scene_xplane_for.forest_logger import logger, MessageCodes
+from io_scene_xplane_for.forest_logger import MessageCodes, logger
 
 
 def create_potential_forest_files() -> List["forest_file.ForestFile"]:

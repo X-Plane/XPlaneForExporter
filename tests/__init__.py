@@ -11,9 +11,8 @@ import bpy
 
 import io_scene_xplane_for
 from io_scene_xplane_for import forest_file, forest_helpers, forest_logger
-
-print(forest_helpers.get_layer_collections_in_view_layer)
 from io_scene_xplane_for.forest_logger import ForestLogger, logger
+
 from . import test_creation_helpers
 
 FLOAT_TOLERANCE = 0.0001
