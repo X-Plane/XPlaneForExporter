@@ -1,6 +1,6 @@
 import bpy
 import enum
-from typing import IO, List, Optional
+from typing import Any, IO, List, Optional
 import dataclasses
 
 message_to_str_count = 0
@@ -22,10 +22,15 @@ non-existant bug
 
 
 class MessageTypes(enum.Enum):
-    INFO: "info"
-    WARNING: "warning"
-    ERROR: "error"
-    SUCCESS: "success"
+    """
+    Types of messages that a logger might choose to care about.
+    All MessageCodes should start with one of these values
+    """
+
+    INFO = "I"
+    WARNING = "W"
+    ERROR = "E"
+    SUCCESS = "S"
 
 
 class MessageCodes(enum.Enum):
@@ -38,7 +43,13 @@ class MessageCodes(enum.Enum):
     # 0-99 - general exporter things
     # 100-999 - global file problems
     #
-    E000 = "Uknown error"
+    # TODO: Pick a scheme and start using that,
+    # QUICK!
+    E000 = "Unknown error"
+    E001 = "Bad layer number name"
+    E002 = "Couldn't find texture file"
+    E003 = "GROUP percentages do not add up to 100"
+    E004 = "Tree wrapper does not have vertical quad"
     S000 = ".for exported successfully"
 
 
@@ -55,12 +66,19 @@ class ForestLogger(metaclass=_Singleton):
     @dataclasses.dataclass
     class Message:
         msg_code: MessageCodes
-        msg_type: MessageTypes
         msg_content: str
-        msg_context: str
+        # TODO: Implement select datablock on problem
+        problem_datablock: Optional[bpy.types.ID]
+        # This is a free variable used to customize how this message is logged.
+        # It should be used sparingly
+        msg_context: Any
 
         def __str__(self) -> str:
             return f"{self.msg_code.name}: {self.msg_content or self.msg_code.value}"
+
+        @property
+        def msg_type(self):
+            return {t.name: t.value for t in MessageTypes}[self.msg_code.name[0]]
 
     class ConsoleTransport:
         def __init__(self):
@@ -83,7 +101,7 @@ class ForestLogger(metaclass=_Singleton):
                 assert False, "File transport failed:\n" + ioe
 
     class InternalTextTransport:
-        def __init__(self, name="XPlane2Blender.log") -> None:
+        def __init__(self, name="ForestLogger.log") -> None:
             if bpy.data.texts.find(name) == -1:
                 self.log_txt_block = bpy.data.texts.new(name)
             else:
@@ -94,20 +112,32 @@ class ForestLogger(metaclass=_Singleton):
         def __call__(self, msg: "ForestLogger.Message") -> None:
             self.log_txt_block.write(f"{msg}\n")
 
-    def __init__(self, transports: Optional = None, msg_types=None):
+    def __init__(
+        self, transports: Optional = None, msg_types: List[MessageTypes] = None
+    ):
         self.transports = transports or [ForestLogger.ConsoleTransport()]
         self._messages: List["ForestLogger.Message"] = []
         self.msg_types = msg_types or list(MessageTypes)
 
-    def reset(self, transports: Optional = None, msg_types=None):
+    def reset(self, transports: Optional = None, msg_types: List[MessageTypes] = None):
         self.transports = transports or [ForestLogger.ConsoleTransport()]
         self._messages.clear()
         self.msg_types = msg_types or list(MessageTypes)
 
-    def log(self, msg_code:MessageCodes, msg_type: MessageTypes, msg_content, msg_context=None):
-        if msg_type in self.msg_types:
+    def log(
+        self,
+        msg_code: MessageCodes,
+        msg_content: str,
+        problem_datablock=None,
+        msg_context=None,
+    ):
+        # TODO: add filtering by type
+        if msg_code.name in self.msg_types or True:
             msg = ForestLogger.Message(
-                msg_code=msg_code, msg_type=msg_type, msg_content=msg_content, msg_context=msg_context
+                msg_code=msg_code,
+                msg_content=msg_content,
+                problem_datablock=problem_datablock,
+                msg_context=msg_context,
             )
             self._messages.append(msg)
             for transport in self.transports:
@@ -115,17 +145,41 @@ class ForestLogger(metaclass=_Singleton):
         else:
             pass
 
-    def error(self, code: int, message: str, context=None):
-        self.log(code, MessageTypes.ERROR, message, context)
+    def error(
+        self,
+        code: MessageCodes,
+        message: str,
+        problem_datablock: Optional[bpy.types.Object],
+        context=None,
+    ):
+        self.log(code, message, problem_datablock, context)
 
-    def warn(self, code: int, message: str, context=None):
-        self.log(code, MessageTypes.WARNING, message, context)
+    def warn(
+        self,
+        code: MessageCodes,
+        message: str,
+        problem_datablock: Optional[bpy.types.Object],
+        context=None,
+    ):
+        self.log(code, message, problem_datablock, context)
 
-    def info(self, code: int, message: str, context=None):
-        self.log(code, MessageTypes.INFO, message, context)
+    def info(
+        self,
+        code: MessageCodes,
+        message: str,
+        problem_datablock: Optional[bpy.types.Object],
+        context=None,
+    ):
+        self.log(code, message, problem_datablock, context)
 
-    def success(self, code: int, message: str, context=None):
-        self.log(code, MessageTypes.SUCCESS, message, context)
+    def success(
+        self,
+        code: MessageCodes,
+        message: str,
+        problem_datablock: Optional[bpy.types.Object],
+        context=None,
+    ):
+        self.log(code, message, problem_datablock, context)
 
     @property
     def messages(self):

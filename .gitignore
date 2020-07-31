@@ -127,3 +127,11 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Blender
+*.blend1
+
+# XPlaneForExport
+tmp/*
+
+*.orig
