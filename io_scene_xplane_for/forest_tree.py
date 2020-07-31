@@ -11,7 +11,8 @@ import bmesh
 import bpy
 import mathutils
 
-from . import forest_helpers
+from io_scene_xplane_for import forest_helpers
+from io_scene_xplane_for.forest_logger import logger, MessageCodes
 
 
 @dataclasses.dataclass
@@ -75,8 +76,8 @@ class YQuadStruct:
 
 
 class ForestTree:
-    def __init__(self, forest_empty: bpy.types.Object, layer_number: int):
-        self.forest_empty = forest_empty
+    def __init__(self, tree_container: bpy.types.Object, layer_number: int):
+        self.tree_container = tree_container
         # TODO: Auto pick frequency feature
         self.vert_info = TreeStruct(*([0] * 11))
         self.vert_quad = None
@@ -86,7 +87,7 @@ class ForestTree:
 
         img = (
             # All children must have the same image texture anyway per validation
-            self.forest_empty.children[0]
+            self.tree_container.children[0]
             .material_slots[0]
             .material.node_tree.nodes["Image Texture"]
             .image
@@ -192,7 +193,7 @@ class ForestTree:
             # print(*((v.co) for v in b.verts))
             return len(set(round(v.co.z, 5) for v in b.verts)) == 1
 
-        for child in self.forest_empty.children:
+        for child in self.tree_container.children:
             if mesh_is_rectangle(child):
                 if mesh_is_vertical(child):
                     print(child.name, "is vertical")
@@ -207,7 +208,11 @@ class ForestTree:
                     print(child.name, "is not vertical or horizontal")
 
         if not self.vert_quad:
-            print("error:", child.name, "does not appear to have a vertical quad")
+            logger.error(
+                MessageCodes.E004,
+                f"{child.name} does not have a vertical quad",
+                self.tree_container,
+            )
             raise ValueError
 
         def set_vert_props():
@@ -285,11 +290,11 @@ class ForestTree:
             print("offset")
             print(self.vert_info.offset)
 
-            self.vert_info.freq = forest_empty.xplane_for.tree.frequency
+            self.vert_info.freq = tree_container.xplane_for.tree.frequency
             self.vert_info.min_height = next(iter(b.edges)).calc_length()
-            self.vert_info.max_height = forest_empty.xplane_for.tree.max_height
+            self.vert_info.max_height = tree_container.xplane_for.tree.max_height
             self.vert_info.layer_number = layer_number
-            self.vert_info.notes = forest_empty.name
+            self.vert_info.notes = tree_container.name
             object_eval.to_mesh_clear()
 
         set_vert_props()
@@ -349,9 +354,11 @@ class ForestTree:
             )
 
             self.horz_info.quad_width = bottom_length * self.vert_info.h
-            percent_of_way_up_tree_m = self.horz_quad.matrix_world.translation.z/self.vert_info.min_height
+            percent_of_way_up_tree_m = (
+                self.horz_quad.matrix_world.translation.z / self.vert_info.min_height
+            )
             self.horz_info.elevation = round(
-                 percent_of_way_up_tree_m * self.vert_info.h
+                percent_of_way_up_tree_m * self.vert_info.h
             )
             self.horz_info.psi_rotation = round(
                 math.degrees(self.horz_quad.rotation_euler.z)

@@ -45,6 +45,7 @@ class MessageCodes(enum.Enum):
     #
     # TODO: Pick a scheme and start using that,
     # QUICK!
+    I000 = "Not writing file due to dry run"
     E000 = "Unknown error"
     E001 = "Bad layer number name"
     E002 = "Couldn't find texture file"

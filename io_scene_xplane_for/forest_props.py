@@ -98,12 +98,14 @@ class XPlaneForForestSettings(bpy.types.PropertyGroup):
     randomness: bpy.props.IntVectorProperty(
         name="Randomness",
         description="How much each tree may deviation from a perfect grid filling, in meters",
+        default=(20, 20),
         min=0,
         size=2,
     )
     spacing: bpy.props.IntVectorProperty(
         name="Spacing",
         description="How far apart, in meters, trees are spread",
+        default=(24, 24),
         min=0,
         size=2,
     )
@@ -133,6 +135,18 @@ class XPlaneForCollectionSettings(bpy.types.PropertyGroup):
         name="File Name",
         description="A file name or relative path, if none Collection name is used.",
         subtype="FILE_PATH",
+    )
+
+    # Since we use sub-children of the forest to represent GROUPs
+    # we need each collection to have this
+    percentage: bpy.props.FloatProperty(
+        name="Percent",
+        description="Percent of how often thi is used",
+        default=0.0,
+        min=0.0,
+        max=100,
+        step=2000,
+        subtype="PERCENTAGE",
     )
 
 

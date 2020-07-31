@@ -41,7 +41,7 @@ class SCENE_PT_io_scene_xplane_for(bpy.types.Panel):
             for col in scene.collection.children
             if forest_helpers.is_visible_in_viewport(col, bpy.context.view_layer)
         ]:
-            self._draw_collection(context, box, exportable_forest)
+            self._draw_collection(context, box.box(), exportable_forest)
 
     def _draw_collection(self, context, layout, collection):
         scene = context.scene
@@ -92,9 +92,26 @@ class SCENE_PT_io_scene_xplane_for(bpy.types.Panel):
         height = layout.row()
         draw_perlin_params(height, forest.perlin_height, forest.has_perlin_height)
 
-        # TODO: If any choices, draw groups percent table
-        if any((forest.perlin_density, forest.perlin_choice, forest.perlin_height)):
-            pass
+        if any(
+            (
+                forest.has_perlin_density,
+                forest.has_perlin_choice,
+                forest.has_perlin_height,
+            )
+        ):
+            box = layout.box()
+            total_percentages = 0.0
+            for child in collection.children:
+                row = box.row()
+                row.label(text=child.name)
+                row.prop(child.xplane_for, "percentage")
+                total_percentages += child.xplane_for.percentage
+
+            if collection.children:
+                box.row().label(
+                    text=f"Total: {total_percentages}",
+                    icon="NONE" if round(total_percentages, 3) == 100 else "ERROR",
+                )
 
 
 register, unregister = bpy.utils.register_classes_factory(

@@ -178,7 +178,7 @@ def main(argv=None) -> int:
             "--factory-startup",
             "-noaudio",
             "-b",
-            #--python-use-system-env TODO, need this?
+            # --python-use-system-env TODO, need this?
         ]
 
         if argv.no_factory_startup:

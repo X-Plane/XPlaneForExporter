@@ -189,7 +189,7 @@ class ForestTestCase(unittest.TestCase):
         try:
             self.assertEquals(len(linesA), len(linesB))
         except AssertionError as e:
-            #TODO: Incorporate line numbers
+            # TODO: Incorporate line numbers
             only_in_a = set(linesA) - set(linesB)
             only_in_b = set(linesB) - set(linesA)
             diff = ">" + "\n>".join(

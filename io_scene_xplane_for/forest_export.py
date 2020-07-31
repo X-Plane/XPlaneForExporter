@@ -3,6 +3,7 @@
 import os
 import os.path
 import sys
+
 # from .xplane_config import getDebug
 # from .xplane_helpers import XPlaneLogger, logger
 from typing import IO, Any, List, Optional
@@ -12,7 +13,7 @@ import mathutils
 from bpy_extras.io_utils import ExportHelper, ImportHelper
 
 from io_scene_xplane_for import forest_file, forest_helpers, forest_tree, forest_logger
-from io_scene_xplane_for.forest_logger import logger
+from io_scene_xplane_for.forest_logger import logger, MessageCodes
 
 
 class EXPORT_OT_XPlaneFor(bpy.types.Operator, ExportHelper):
@@ -32,8 +33,13 @@ class EXPORT_OT_XPlaneFor(bpy.types.Operator, ExportHelper):
 
     def execute(self, context):
         debug = True
+        dry_run = False
+        continue_on_error = False
         # self._startLogging()
-        forest_files = forest_file.collect_potential_forest_files()
+        logger.reset()
+        # --- collect ---
+        forest_files = forest_file.create_potential_forest_files()
+        # ---------------
 
         # --- write -----
         def write_to_disk(forest_file) -> None:
@@ -41,9 +47,8 @@ class EXPORT_OT_XPlaneFor(bpy.types.Operator, ExportHelper):
             if debug:
                 print("---", o, "---", sep="\n")
             file_name = bpy.path.ensure_ext(forest_file._root_collection.name, ".for")
-            # TODO: when we have a logger again
-            # if logger.errors:
-            # return
+            if logger.errors:
+                return
             blend_path = bpy.context.blend_data.filepath
             if self.filepath:
                 final_path = os.path.abspath(os.path.join(self.filepath, file_name))
@@ -51,7 +56,6 @@ class EXPORT_OT_XPlaneFor(bpy.types.Operator, ExportHelper):
                 final_path = os.path.abspath(
                     os.path.join(os.path.dirname(blend_path), file_name)
                 )
-            # elif dry_run:
 
             assert final_path.endswith(".for")
             try:
@@ -60,8 +64,15 @@ class EXPORT_OT_XPlaneFor(bpy.types.Operator, ExportHelper):
                 logger.error(e)
                 raise
             else:
-                with open(final_path, "w") as f:
-                    f.write(o)
+                if not dry_run:
+                    with open(final_path, "w") as f:
+                        f.write(o)
+                else:
+                    logger.info(
+                        MessageCodes.I000,
+                        "Not writing '{final_path}' due to dry run",
+                        None,
+                    )
 
         print("num forest files", len(forest_files))
         for ff in forest_files:
@@ -72,7 +83,7 @@ class EXPORT_OT_XPlaneFor(bpy.types.Operator, ExportHelper):
 
         if not forest_files:
             # logger.error("Could not find any Root Forests, did you forget check 'Root Forest'?")
-            # logger.clear()
+            # logger.reset()
             # logger.end
             return {"CANCELLED"}
         #        elif logger.errors:
@@ -80,8 +91,10 @@ class EXPORT_OT_XPlaneFor(bpy.types.Operator, ExportHelper):
         #            return {"CANCELLED"}
         #        elif not logger.errors and forest_files:
         else:
-            #            logger.success("Export finished without errors")
-            # logger.clear()
+            logger.success(
+                forest_logger.MessageCodes.S000, "Export finished without errors", None
+            )
+            logger.reset()
             return {"FINISHED"}
 
     def invoke(self, context, event):
