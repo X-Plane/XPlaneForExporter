@@ -5,7 +5,12 @@ from typing import Dict, List, Optional, Tuple
 
 import bpy
 
-from io_scene_xplane_for import forest_helpers, forest_logger, forest_tree
+from io_scene_xplane_for import (
+    forest_helpers,
+    forest_logger,
+    forest_tree,
+    forest_header,
+)
 from io_scene_xplane_for.forest_logger import MessageCodes, logger
 
 
@@ -32,35 +37,9 @@ class ForestFile:
         self._root_collection = root_collection
         file_name = self._root_collection.xplane_for.file_name
         self.file_name = file_name if file_name else self._root_collection.name
-        self.texture_path: pathlib.Path = pathlib.Path()
-        self.scale_x: int = None
-        self.scale_y: int = None
+        self.header = forest_header.ForestHeader(self)
 
-        def get_params(perlin_type: str):
-            """perlin_type is perlin_density, perlin_choice, perlin_height"""
-            has_param = getattr(
-                self._root_collection.xplane_for.forest, "has_" + perlin_type
-            )
-            if has_param:
-                perlin_group = getattr(
-                    self._root_collection.xplane_for.forest, perlin_type
-                )
-                return list(
-                    itertools.chain(
-                        perlin_group.wavelength_amp_1,
-                        perlin_group.wavelength_amp_2,
-                        perlin_group.wavelength_amp_3,
-                        perlin_group.wavelength_amp_4,
-                    )
-                )
-            else:
-                return None
-
-        self.perlin_density: Optional[List[float]] = get_params("perlin_density")
-        self.perlin_choice: Optional[List[float]] = get_params("perlin_choice")
-        self.perlin_height: Optional[List[float]] = get_params("perlin_height")
-
-        if any((self.perlin_density, self.perlin_choice, self.perlin_height)):
+        if self.has_perlin_params:
             # Maps layer_number to percentage for use with GROUPs
             self.group_percentages: Optional[Dict[int, float]] = {
                 # TODO: make safe and make unit test
@@ -69,6 +48,16 @@ class ForestFile:
             }
         else:
             self.group_percentages: Optional[Dict[int, float]] = None
+
+    @property
+    def has_perlin_params(self) -> bool:
+        return any(
+            (
+                self.header.perlin_density,
+                self.header.perlin_choice,
+                self.header.perlin_height,
+            )
+        )
 
     def collect(self):
         try:
@@ -103,9 +92,10 @@ class ForestFile:
                 and (0 < len(obj.children) <= 3)
                 and forest_helpers.is_visible_in_viewport(obj, bpy.context.view_layer)
             ]:
-                t = forest_tree.ForestTree(forest_empty, layer_number)
-                t.collect()
-                self.trees.append(t)
+                pass
+                # t = forest_tree.ForestTree(forest_empty, layer_number)
+                # t.collect()
+                # self.trees.append(t)
 
         try:
             img = (
@@ -137,61 +127,27 @@ class ForestFile:
                 layer_number,
             )
         else:
-            self.scale_x, self.scale_y = img.size
-
-            self.texture_path = bpy.path.relpath(img.filepath).replace("//", "")
+            # TODO: Should this stuff go into forest_header?
+            self.header.scale_x, self.header.scale_y = img.size
+            self.header.texture_path = bpy.path.relpath(img.filepath).replace("//", "")
 
     def write(self):
         debug = True
+        o = ""
         forest_settings = self._root_collection.xplane_for.forest
 
-        def fmt_perlin_params(directive, perlin_params):
-            try:
-                s = f"{directive} " + (
-                    "\t".join(
-                        " ".join(map(forest_helpers.floatToStr, p))
-                        for p in zip(perlin_params[:-1:2], perlin_params[1::2])
-                    )
-                )
-                return s
-            except (AttributeError, TypeError) as e:
-                return ""
-
-        o = "\n".join(
-            (
-                "A",
-                "800",
-                "FOREST",
-                f"TEXTURE {self.texture_path}",
-                "",
-                f"LOD\t{forest_helpers.floatToStr(forest_settings.max_lod)}"
-                if forest_settings.has_max_lod
-                else f"",
-                f"SCALE_X\t{self.scale_x}",
-                f"SCALE_Y\t{self.scale_y}",
-                f"SPACING\t{' '.join(map(forest_helpers.floatToStr,forest_settings.spacing))}",
-                f"RANDOM\t{' '.join(map(forest_helpers.floatToStr,forest_settings.randomness))}",
-                f"{'' if forest_settings.cast_shadow else 'NO_SHADOW'}",
-                "",
-                fmt_perlin_params("DENSITY_PARAMS", self.perlin_density),
-                fmt_perlin_params("CHOICE_PARAMS", self.perlin_choice),
-                fmt_perlin_params("HEIGHT_PARAMS", self.perlin_height),
-                "",
-            )
-        )
-
+        o += self.header.write()
         # for group in groups
         for layer_number, trees_in_layer in itertools.groupby(
             self.trees, key=lambda tree: tree.vert_info.layer_number
         ):
-            if any((self.perlin_choice, self.perlin_density, self.perlin_height)):
+            if self.has_perlin_params:
                 pprint.pprint(self.group_percentages)
                 o += f"GROUP {layer_number} {forest_helpers.floatToStr(self.group_percentages[layer_number])}\n"
                 for tree in trees_in_layer:
                     o += "\n".join(
                         "\t" + line for line in f"{tree.write()}\n".splitlines()
                     )
-
             else:
                 for tree in trees_in_layer:
                     o += f"{tree.write()}\n"

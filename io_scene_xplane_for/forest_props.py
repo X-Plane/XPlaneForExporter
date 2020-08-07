@@ -15,6 +15,15 @@ class XPlaneForObjectSettings(bpy.types.PropertyGroup):
         description="Settings for a tree that an empty represents",
     )
 
+    lod_near: bpy.props.IntProperty(
+        name="LOD (Near)", description="The near plane of the LOD", min=0
+    )
+    lod_far: bpy.props.IntProperty(
+        name="LOD (Far)",
+        description="The far plane of the LOD, must be greater than the near",
+        min=1,
+    )
+
 
 class XPlaneForSkipSurfaceDirective(bpy.types.PropertyGroup):
     skip_surface: bpy.props.EnumProperty(

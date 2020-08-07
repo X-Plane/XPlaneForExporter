@@ -260,6 +260,7 @@ class ForestTree:
                 self.vert_info.w,
                 self.vert_info.h,
             )
+
             def vecs_of_edge(
                 edge: bmesh.types.BMEdge,
             ) -> Tuple[mathutils.Vector, mathutils.Vector]:
@@ -324,7 +325,6 @@ class ForestTree:
                 )
             ]
 
-            )
             bl_uv, br_uv, tl_uv, tr_uv = sorted(uvs[:4])
             self.horz_info.s, self.horz_info.t = (
                 round(bl_uv.x * size_x),

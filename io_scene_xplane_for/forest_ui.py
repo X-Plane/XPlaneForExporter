@@ -1,7 +1,5 @@
 import itertools
-
 import bpy
-
 from . import forest_helpers
 
 
@@ -13,12 +11,16 @@ class OBJECT_PT_io_scene_xplane_for(bpy.types.Panel):
 
     @classmethod
     def poll(self, context):
-        return context.object.type == "EMPTY"
+        return context.object.type in {"EMPTY", "MESH"}
 
     def draw(self, context):
-        tree = context.object.xplane_for.tree
-        self.layout.prop(tree, "frequency")
-        self.layout.prop(tree, "max_height")
+        if context.object.type == "EMTPY":
+            tree = context.object.xplane_for.tree
+            self.layout.prop(tree, "frequency")
+            self.layout.prop(tree, "max_height")
+        elif context.object.parent:
+            self.layout.prop(context.object.xplane_for, "lod_near")
+            self.layout.prop(context.object.xplane_for, "lod_far")
 
 
 class SCENE_PT_io_scene_xplane_for(bpy.types.Panel):
