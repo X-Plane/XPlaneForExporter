@@ -3,6 +3,34 @@ import bpy
 from . import forest_helpers
 
 
+class MATERIAL_PT_io_scene_xplane_for(bpy.types.Panel):
+    bl_label = "XPlaneForExporter"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "material"
+
+    @classmethod
+    def poll(self, context):
+        return True
+
+    def draw(self, context):
+        material = context.material
+        box = self.layout.box()
+        box.label(text="Texture Settings")
+
+        box.row().prop(material.xplane_for, "texture_path")
+        def has_prop_pairing(box, has_attr, attr):
+            row = box.row()
+            row.prop(material.xplane_for, has_attr)
+            if getattr(material.xplane_for, has_attr):
+                row.prop(material.xplane_for, attr)
+        has_prop_pairing(box, "texture_path_normal", "texture_path_ratio")
+        has_prop_pairing(box, "has_no_blend", "no_blend")
+        has_prop_pairing(box, "has_specular", "specular")
+        has_prop_pairing(box, "has_bump_level", "bump_level")
+        box.row().prop(material.xplane_for, "normal_mode")
+
+
 class OBJECT_PT_io_scene_xplane_for(bpy.types.Panel):
     bl_label = "XPlaneForExporter"
     bl_space_type = "PROPERTIES"
@@ -55,9 +83,6 @@ class SCENE_PT_io_scene_xplane_for(bpy.types.Panel):
         column.label(text=collection.name)
 
         box.prop(collection.xplane_for, "file_name")
-
-        box.label(text="Texture Settings")
-        box.row().prop(forest, "texture_path")
 
         box = layout.box()
         box.label(text="Behavior Settings")
@@ -119,5 +144,9 @@ class SCENE_PT_io_scene_xplane_for(bpy.types.Panel):
 
 
 register, unregister = bpy.utils.register_classes_factory(
-    (OBJECT_PT_io_scene_xplane_for, SCENE_PT_io_scene_xplane_for,)
+    (
+        MATERIAL_PT_io_scene_xplane_for,
+        OBJECT_PT_io_scene_xplane_for,
+        SCENE_PT_io_scene_xplane_for,
+    )
 )

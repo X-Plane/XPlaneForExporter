@@ -3,7 +3,7 @@ import functools
 import dataclasses
 import math
 import pprint
-from typing import Tuple, List, Union, Any, Callable, Dict
+from typing import Tuple, List, Union, Any, Callable, Dict, Optional
 import operator
 from operator import attrgetter
 
@@ -69,9 +69,9 @@ class YQuadStruct:
             try:
                 setattr(self, attr, factory(getattr(self, attr)))
             except ValueError:
-                print(
-                    f"Couldn't convert '{attr}''s value ({getattr(self, attr)}) with {factory}"
-                )
+                assert (
+                    False
+                ), f"Couldn't convert '{attr}''s value ({getattr(self, attr)}) with {factory}"
 
     def __str__(self) -> str:
         return "\t".join(
@@ -83,22 +83,14 @@ class YQuadStruct:
 
 class ForestTree:
     def __init__(self, tree_container: bpy.types.Object, layer_number: int):
-        self.tree_container = tree_container
+        self.tree_container: bpy.types.Object = tree_container
         # TODO: Auto pick frequency feature
         self.vert_info = TreeStruct(*([0] * 11))
-        self.vert_quad = None
+        self.vert_quad: bpy.types.Object = None
 
         self.horz_info = YQuadStruct(*([0] * 9))
-        self.horz_quad = None
-
-        img = (
-            # All children must have the same image texture anyway per validation
-            self.tree_container.children[0]
-            .material_slots[0]
-            .material.node_tree.nodes["Image Texture"]
-            .image
-        )
-        size_x, size_y = img.size
+        self.horz_quad: Optional[bpy.types.Object] = None
+        self.complex_objects: List[bpy.types.Object] = []
 
         depsgraph = bpy.context.evaluated_depsgraph_get()
 
@@ -212,6 +204,11 @@ class ForestTree:
                     self.horz_quad = child
                 else:
                     print(child.name, "is not vertical or horizontal")
+                    pass
+            elif len(child.data.polygons) > 1:
+                self.complex_objects.append(child)
+            else:
+                print("idk what child is", child.name)
 
         if not self.vert_quad:
             logger.error(
@@ -220,6 +217,36 @@ class ForestTree:
                 self.tree_container,
             )
             raise ValueError
+        else:
+            try:
+                self.texture_image = (
+                    # All children must have the same image texture anyway per validation
+                    self.vert_quad.material_slots[0]
+                    .material.node_tree.nodes["Image Texture"]
+                    .image
+                )
+            except (IndexError, AttributeError):
+                logger.error(
+                    MessageCodes.E002,
+                    "Tree vert_quad had no 1st slot or no material in its first slot",
+                    self.vert_quad,
+                )
+                raise
+            except KeyError:
+                logger.error(
+                    MessageCodes.E002,
+                    "Material's nodes didn't have an image texture",
+                    self.vert_quad,
+                )
+                raise
+            except ValueError:
+                logger.error(
+                    MessageCodes.E002,
+                    "Material's image texture had no image",
+                    self.tree_container.vert_quad,
+                )
+                raise
+            size_x, size_y = self.texture_image.size
 
         def set_vert_props():
             b = bmesh.new()
@@ -387,4 +414,6 @@ class ForestTree:
                 f"#Y_QUAD\t<left>	<bottom>	<width>	<height>	<offset_center_x>	<offset_center_y>	<width>	<elevation>	<rotation>\n"
                 f"Y_QUAD\t{self.horz_info}"
             )
+        o += "\n".join(f"MESH3D\t{obj.name}" for obj in self.complex_objects)
+
         return o

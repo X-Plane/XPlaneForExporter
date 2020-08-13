@@ -35,9 +35,11 @@ class MessageTypes(enum.Enum):
 
 class MessageCodes(enum.Enum):
     """
-    The unit test uses these error codes to test that specific errors/warnings/etc occured.
-    Renumbering these will probably break tests. The naming convention is important, In case a message isn't given, the code's
-    fallback message is the enum value
+    Unit tests and the export log use these to communicate what happened without needing to parse the message itself.
+    The first letter of the code corresponds to what type (info, warning, error, success) it is and is important.
+    Renaming or renumbering these will probably break unit tests.
+
+    The value serves as a comment, during execution the a better error message will be written (I hope!)
     """
 
     # 0-99 - general exporter things
@@ -51,6 +53,10 @@ class MessageCodes(enum.Enum):
     E002 = "Couldn't find texture file"
     E003 = "GROUP percentages do not add up to 100"
     E004 = "Tree wrapper does not have vertical quad"
+    E005 = "No SHADER_2D found"
+    E006 = "No SHADER_3D found, despite having 3D trees"
+    E007 = "Not all textures for SHADER_2D are matching"
+    E008 = "Not all textures for SHADER_3D are matching"
     S000 = ".for exported successfully"
 
 

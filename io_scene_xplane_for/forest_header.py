@@ -11,20 +11,18 @@ from operator import attrgetter
 import bmesh
 import bpy
 import mathutils
-from io_scene_xplane_for import forest_file, forest_helpers, forest_tables
+from io_scene_xplane_for import (
+    forest_constants,
+    forest_file,
+    forest_helpers,
+    forest_tables,
+)
 from io_scene_xplane_for.forest_logger import logger, MessageCodes
 
 
 class ForestHeader:
     def __init__(self, for_file: "forest_file.ForestFile"):
         self.forest_file: forest_file.ForestFile = for_file
-        self.complex_objects = [
-            obj for obj in bpy.data.objects if obj.data and len(obj.data.vertices)
-        ]
-        # self.complex_objects = [
-        # child for tree in self.forest_file.trees
-        # for child in tree.tree_container.children
-        # if len(child.data.vertices) > 4]
 
         self.texture_path: pathlib.Path = pathlib.Path()
         self.scale_x: int = None
@@ -56,11 +54,84 @@ class ForestHeader:
         self.perlin_height: Optional[List[float]] = get_params("perlin_height")
 
     def collect(self):
-        pass
+        """Must be called after trees are collected. Raises ValueError for various problems"""
+
+        def collect_shader_materials() -> Tuple[bpy.types.Material, bpy.types.Material]:
+            try:
+                shader_2Ds = {
+                    t.vert_quad.material_slots[0].material
+                    for t in self.forest_file.trees
+                    if t.vert_quad.material_slots[0].material
+                }
+                if len(shader_2Ds) != 1:
+                    raise ValueError
+            except ValueError:
+                logger.error(
+                    MessageCodes.E007,
+                    "Not all vert_quads share the same SHADER_2D material",
+                    self.forest_file._root_collection,
+                )
+
+            try:
+                complex_objects = itertools.chain.from_iterable(
+                    t.complex_objects for t in self.forest_file.trees
+                )
+                shader_3Ds = {
+                    obj.material_slots[0].material
+                    for obj in complex_objects
+                    if obj.material_slots[0].material
+                }
+                if len(shader_3Ds) != 1:
+                    raise ValueError
+            except ValueError:
+                logger.error(
+                    MessageCodes.E008,
+                    "Not all complex objects share the same SHADER_3D material",
+                    self.forest_file._root_collection,
+                )
+                raise
+
+            return shader_2Ds.pop(), shader_3Ds.pop()
+
+        self.shader_2D, self.shader_3D = collect_shader_materials()
+        self.scale_x, self.scale_y = self.forest_file.trees[0].texture_image.size
 
     def write(self):
         o = ""
 
+        forest_settings = self.forest_file._root_collection.xplane_for.forest
+        o += "\n".join(("A", "800", "FOREST",)) + "\n"
+
+        o += "\n"
+        o += self._write_shader("SHADER_2D", self.shader_2D) + "\n"
+
+        o += "\n"
+        o += self._write_shader("SHADER_3D", self.shader_3D) + "\n"
+
+        o += (
+            "\n".join(
+                directive
+                for directive in (
+                    f"LOD\t{forest_helpers.floatToStr(forest_settings.max_lod)}"
+                    if forest_settings.has_max_lod
+                    else f"",
+                    f"SCALE_X\t{self.scale_x}",
+                    f"SCALE_Y\t{self.scale_y}",
+                    f"SPACING\t{' '.join(map(forest_helpers.floatToStr,forest_settings.spacing))}",
+                    f"RANDOM\t{' '.join(map(forest_helpers.floatToStr,forest_settings.randomness))}",
+                    "" if forest_settings.cast_shadow else "NO_SHADOW",
+                )
+                if directive
+            )
+            + "\n"
+        )
+        o += self._write_perlin_params()
+
+        print(o)
+
+        return o
+
+    def _write_perlin_params(self) -> str:
         def fmt_perlin_params(directive: str, perlin_params):
             try:
                 s = f"{directive} " + (
@@ -73,32 +144,49 @@ class ForestHeader:
             except (AttributeError, TypeError) as e:
                 return ""
 
-        forest_settings = self.forest_file._root_collection.xplane_for.forest
-        o += "\n".join(
-            (
-                "A",
-                "800",
-                "FOREST",
-                f"TEXTURE {self.texture_path}",
-                "",
-                f"LOD\t{forest_helpers.floatToStr(forest_settings.max_lod)}"
-                if forest_settings.has_max_lod
-                else f"",
-                f"SCALE_X\t{self.scale_x}",
-                f"SCALE_Y\t{self.scale_y}",
-                f"SPACING\t{' '.join(map(forest_helpers.floatToStr,forest_settings.spacing))}",
-                f"RANDOM\t{' '.join(map(forest_helpers.floatToStr,forest_settings.randomness))}",
-                "" if forest_settings.cast_shadow else "NO_SHADOW",
-                "",
+        return "\n".join(
+            directive
+            for directive in (
                 fmt_perlin_params("DENSITY_PARAMS", self.perlin_density),
                 fmt_perlin_params("CHOICE_PARAMS", self.perlin_choice),
                 fmt_perlin_params("HEIGHT_PARAMS", self.perlin_height),
-                "",
             )
+            if directive
         )
 
-        for complex_object in self.complex_objects:
-            o += forest_tables.write_mesh_table(complex_object=complex_object)
-        print(o)
-
+    def _write_shader(
+        self, shader_type: str, shader_material: bpy.types.Material
+    ) -> str:
+        """Where shader_type is 'SHADER_2D' or 'SHADER_3D'"""
+        mat_settings = shader_material.xplane_for
+        # TODO: pathlib this!
+        texture_path = mat_settings.texture_path.replace("//", "").replace("\\", "/")
+        texture_path_normal = mat_settings.texture_path_normal.replace(
+            "//", ""
+        ).replace("\\", "/")
+        o = "\n".join(
+            "\t" + directive if directive != shader_type else shader_type
+            for directive in (
+                shader_type,
+                f"TEXTURE {texture_path}",
+                f"TEXTURE_NORMAL {forest_helpers.floatToStr(mat_settings.texture_path_normal_ratio)}\t{texture_path_normal}"
+                if mat_settings.texture_path_normal
+                else "",
+                f"NO_BLEND {forest_helpers.floatToStr(mat_settings.no_blend)}"
+                if mat_settings.has_no_blend
+                else "",
+                f"SPECULAR {forest_helpers.floatToStr(mat_settings.specular)}"
+                if mat_settings.has_specular
+                else "",
+                f"BUMP_LEVEL {forest_helpers.floatToStr(mat_settings.bump_level)}"
+                if mat_settings.has_bump_level
+                else "",
+                "NO_SHADOW" if mat_settings.no_shadow else "",
+                "SHADOW_BLEND" if mat_settings.shadow_blend else "",
+                f"{mat_settings.normal_mode}"
+                if mat_settings.normal_mode != forest_constants.NORMAL_MODE_NONE
+                else "",
+            )
+            if directive
+        )
         return o

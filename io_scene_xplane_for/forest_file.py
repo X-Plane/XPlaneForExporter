@@ -6,10 +6,11 @@ from typing import Dict, List, Optional, Tuple
 import bpy
 
 from io_scene_xplane_for import (
+    forest_header,
     forest_helpers,
     forest_logger,
+    forest_tables,
     forest_tree,
-    forest_header,
 )
 from io_scene_xplane_for.forest_logger import MessageCodes, logger
 
@@ -89,47 +90,16 @@ class ForestFile:
                 obj
                 for obj in layer_number_provider.all_objects
                 if obj.type == "EMPTY"
-                and (0 < len(obj.children) <= 3)
+                and obj.children
                 and forest_helpers.is_visible_in_viewport(obj, bpy.context.view_layer)
             ]:
-                pass
-                # t = forest_tree.ForestTree(forest_empty, layer_number)
-                # t.collect()
-                # self.trees.append(t)
+                t = forest_tree.ForestTree(forest_empty, layer_number)
+                t.collect()
+                #TODO: Validate we have trees after this
+                self.trees.append(t)
 
-        try:
-            img = (
-                self.trees[0]
-                .tree_container.children[0]
-                .material_slots[0]
-                .material.node_tree.nodes["Image Texture"]
-                .image
-            )
-            if not img:
-                raise ValueError
-        except IndexError:
-            logger.error(
-                MessageCodes.E002,
-                "You didn't have at least one tree with an Image Texture for the base color node",
-                layer_number_provider,
-            )
-            return
-        except KeyError:
-            logger.error(
-                MessageCodes.E002,
-                "Material's nodes didn't have an image texture",
-                layer_number,
-            )
-        except ValueError:
-            logger.error(
-                MessageCodes.E002,
-                "Material's image texture had no image",
-                layer_number,
-            )
-        else:
-            # TODO: Should this stuff go into forest_header?
-            self.header.scale_x, self.header.scale_y = img.size
-            self.header.texture_path = bpy.path.relpath(img.filepath).replace("//", "")
+        self.header.collect()
+
 
     def write(self):
         debug = True
@@ -137,6 +107,11 @@ class ForestFile:
         forest_settings = self._root_collection.xplane_for.forest
 
         o += self.header.write()
+        o += "\n"
+        for complex_object in itertools.chain.from_iterable(
+                t.complex_objects for t in self.trees):
+            o += forest_tables.write_mesh_table(complex_object=complex_object)
+        o += "\n"
         # for group in groups
         for layer_number, trees_in_layer in itertools.groupby(
             self.trees, key=lambda tree: tree.vert_info.layer_number
@@ -151,6 +126,7 @@ class ForestFile:
             else:
                 for tree in trees_in_layer:
                     o += f"{tree.write()}\n"
+        o += "\n"
 
         # TODO: Surfaces to skip
         # o += "\n".join(set(forest_settings.surfaces_to_skip))
