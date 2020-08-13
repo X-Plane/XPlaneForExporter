@@ -104,18 +104,12 @@ class ForestTree:
             b.from_mesh(mesh_eval)
             b.transform(object_eval.matrix_world)
             object_eval.to_mesh_clear()
-            return b
+            cp = b.copy()
+            b.free()
+            return cp
 
         def mesh_is_rectangle(obj: bpy.types.Object) -> bool:
-            b = bmesh.new()
-            object_eval = obj.evaluated_get(depsgraph)
-            mesh_eval = object_eval.to_mesh(
-                preserve_all_data_layers=False, depsgraph=depsgraph
-            )
-
-            b.from_mesh(mesh_eval)
-            b.transform(object_eval.matrix_world)
-            object_eval.to_mesh_clear()
+            b = get_bmesh_from_obj(obj)
             try:
                 if len(b.edges) == 4 and all(
                     (
@@ -132,22 +126,14 @@ class ForestTree:
                         b.clear()
                         return True
             except ValueError:  # calc_edge_angle failed, for instance, over a cube
-                print("AAAAAcalc_edge_angle_failed", obj.name)
+                b.free()
                 return False
             else:
-                print(obj.name, "is not a rectangle")
+                b.free()
                 return False
 
         def mesh_is_vertical(obj: bpy.types.Object):
-            b = bmesh.new()
-            object_eval = obj.evaluated_get(depsgraph)
-            mesh_eval = object_eval.to_mesh(
-                preserve_all_data_layers=False, depsgraph=depsgraph
-            )
-
-            b.from_mesh(mesh_eval)
-            b.transform(object_eval.matrix_world)
-            object_eval.to_mesh_clear()
+            b = get_bmesh_from_obj(obj)
 
             def edge_to_vec(edge) -> mathutils.Vector:
                 return forest_helpers.round_vec(
@@ -163,47 +149,31 @@ class ForestTree:
             z_axis = mathutils.Vector((0, 0, 1))
             top, left, bottom, right = map(edge_to_vec, b.edges)
             # TODO: Validate left is <= 0 for offset purposes
-            print("--- dot ---")
-            print(*(round(edge.dot(z_axis), 5) for edge in [left, right]))
-            print("------------")
-            print(
-                "--- top left bottom right",
-                *zip([top, left, bottom, right,], ["top", "left", "bottom", "right"]),
-                sep="\n",
-            )
 
-            return (
+            ret = (
                 all(round(v.co.z, 5) == 0 for v in itertools.islice(b.verts, 2))
                 and round(top.z, 5) > 0
                 and round(sum(edge.dot(z_axis) for edge in [left, right]), 5) == 0.0
             )
+            b.free()
+            return ret
 
         def mesh_is_horizontal(obj: bpy.types.Object):
-            b = bmesh.new()
-            object_eval = obj.evaluated_get(depsgraph)
-            mesh_eval = object_eval.to_mesh(
-                preserve_all_data_layers=False, depsgraph=depsgraph
-            )
-
-            b.from_mesh(mesh_eval)
-            b.transform(object_eval.matrix_world)
-            object_eval.to_mesh_clear()
-            # print(*((v.co) for v in b.verts))
-            return len(set(round(v.co.z, 5) for v in b.verts)) == 1
+            b = get_bmesh_from_obj(obj)
+            verts = list(b.verts)
+            b.free()
+            return len(set(round(v.co.z, 5) for v in verts)) == 1
 
         for child in self.tree_container.children:
             if mesh_is_rectangle(child):
                 if mesh_is_vertical(child):
-                    print(child.name, "is vertical")
                     self.vert_info.quads += 1
                     # TODO: must ensure that both quads are identical,
                     # but rotated at 90 degrees or only pick the first one you see
                     self.vert_quad = child
                 elif mesh_is_horizontal(child):
-                    print(child.name, "is horizontal")
                     self.horz_quad = child
                 else:
-                    print(child.name, "is not vertical or horizontal")
                     pass
             elif len(child.data.polygons) > 1:
                 self.complex_objects.append(child)
@@ -249,14 +219,7 @@ class ForestTree:
             size_x, size_y = self.texture_image.size
 
         def set_vert_props():
-            b = bmesh.new()
-            object_eval = self.vert_quad.evaluated_get(depsgraph)
-            mesh_eval = object_eval.to_mesh(
-                preserve_all_data_layers=False, depsgraph=depsgraph
-            )
-
-            b.from_mesh(mesh_eval)
-            b.transform(object_eval.matrix_world)
+            b = get_bmesh_from_obj(self.vert_quad)
             uvs = [
                 uv_loop.uv
                 for uv_loop in sorted(
@@ -264,12 +227,6 @@ class ForestTree:
                     key=lambda uv_loop: uv_loop.uv,
                 )
             ]
-            #pprint.pprint(
-                #[
-                    #((round(uv.x * size_x), round(uv.y * size_y)), label)
-                    #for uv, label in zip(uvs, ["bl", "br", "tl", "tr"])
-                #]
-            #)
             # TODO: Handle multiple faces at once
             bl, br, tl, tr = uvs[:4]
             self.vert_info.s, self.vert_info.t = (
@@ -279,13 +236,6 @@ class ForestTree:
             self.vert_info.w, self.vert_info.h = (
                 round(tr.x * size_y) - self.vert_info.s,
                 round(tr.y * size_y) - self.vert_info.t,
-            )
-            print(
-                "stwh",
-                self.vert_info.s,
-                self.vert_info.t,
-                self.vert_info.w,
-                self.vert_info.h,
             )
 
             def vecs_of_edge(
@@ -307,12 +257,6 @@ class ForestTree:
             left, bottom, right, top = [
                 verts_from_edge_global(edge) for edge in self.vert_quad.data.edges
             ]
-            print(
-                "--- top left bottom right",
-                *zip([top, left, bottom, right,], ["top", "left", "bottom", "right"]),
-                sep="\n",
-            )
-            print("origin (x)")
             origin_x = self.vert_quad.matrix_world.translation.x
             left_x = left[0].x
             bottom_length = (bottom[0] - bottom[1]).length
@@ -321,28 +265,18 @@ class ForestTree:
             self.vert_info.offset = round(
                 ((origin_x - left_x) / bottom_length) * uv_scale
             )
-            print("offset")
-            print(self.vert_info.offset)
 
             self.vert_info.freq = tree_container.xplane_for.tree.frequency
             self.vert_info.min_height = next(iter(b.edges)).calc_length()
             self.vert_info.max_height = tree_container.xplane_for.tree.max_height
             self.vert_info.layer_number = layer_number
             self.vert_info.notes = tree_container.name
-            object_eval.to_mesh_clear()
+            b.free()
 
         set_vert_props()
 
         def set_horz_props():
-            b = bmesh.new()
-            object_eval = self.horz_quad.evaluated_get(depsgraph)
-            mesh_eval = object_eval.to_mesh(
-                preserve_all_data_layers=False, depsgraph=depsgraph
-            )
-
-            b.from_mesh(mesh_eval)
-            b.transform(object_eval.matrix_world)
-            object_eval.to_mesh_clear()
+            b = get_bmesh_from_obj(self.horz_quad)
 
             uvs = [
                 uv_loop.uv
@@ -396,6 +330,7 @@ class ForestTree:
             self.horz_info.psi_rotation = round(
                 math.degrees(self.horz_quad.rotation_euler.z)
             )
+            b.free()
 
         if self.horz_quad:
             set_horz_props()
