@@ -24,7 +24,7 @@ class MATERIAL_PT_io_scene_xplane_for(bpy.types.Panel):
             row.prop(material.xplane_for, has_attr)
             if getattr(material.xplane_for, has_attr):
                 row.prop(material.xplane_for, attr)
-        has_prop_pairing(box, "texture_path_normal", "texture_path_ratio")
+        has_prop_pairing(box, "texture_path_normal", "texture_path_normal_ratio")
         has_prop_pairing(box, "has_no_blend", "no_blend")
         has_prop_pairing(box, "has_specular", "specular")
         has_prop_pairing(box, "has_bump_level", "bump_level")
@@ -46,7 +46,7 @@ class OBJECT_PT_io_scene_xplane_for(bpy.types.Panel):
             tree = context.object.xplane_for.tree
             self.layout.prop(tree, "frequency")
             self.layout.prop(tree, "max_height")
-        elif context.object.parent:
+        elif context.object.parent and len(context.object.data.polygons) > 1:
             self.layout.prop(context.object.xplane_for, "lod_near")
             self.layout.prop(context.object.xplane_for, "lod_far")
 

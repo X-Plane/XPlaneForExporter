@@ -24,7 +24,6 @@ class ForestHeader:
     def __init__(self, for_file: "forest_file.ForestFile"):
         self.forest_file: forest_file.ForestFile = for_file
 
-        self.texture_path: pathlib.Path = pathlib.Path()
         self.scale_x: int = None
         self.scale_y: int = None
 
@@ -57,9 +56,10 @@ class ForestHeader:
         """Must be called after trees are collected. Raises ValueError for various problems"""
 
         def collect_shader_materials() -> Tuple[bpy.types.Material, bpy.types.Material]:
+            shader_materials = [None, None]
             try:
                 shader_2Ds = {
-                    t.vert_quad.material_slots[0].material
+                    t.vert_quad.material_slots[0].material.name
                     for t in self.forest_file.trees
                     if t.vert_quad.material_slots[0].material
                 }
@@ -71,17 +71,21 @@ class ForestHeader:
                     "Not all vert_quads share the same SHADER_2D material",
                     self.forest_file._root_collection,
                 )
+            else:
+                shader_materials[0] = bpy.data.materials[shader_2Ds.pop()]
 
             try:
                 complex_objects = itertools.chain.from_iterable(
                     t.complex_objects for t in self.forest_file.trees
                 )
                 shader_3Ds = {
-                    obj.material_slots[0].material
+                    obj.material_slots[0].material.name
                     for obj in complex_objects
                     if obj.material_slots[0].material
                 }
-                if len(shader_3Ds) != 1:
+                if len(shader_3Ds) == 1:
+                    shader_materials[1] = bpy.data.materials[shader_3Ds.pop()]
+                elif len(shader_3Ds) > 1:
                     raise ValueError
             except ValueError:
                 logger.error(
@@ -91,7 +95,7 @@ class ForestHeader:
                 )
                 raise
 
-            return shader_2Ds.pop(), shader_3Ds.pop()
+            return shader_materials
 
         self.shader_2D, self.shader_3D = collect_shader_materials()
         self.scale_x, self.scale_y = self.forest_file.trees[0].texture_image.size
@@ -105,9 +109,11 @@ class ForestHeader:
         o += "\n"
         o += self._write_shader("SHADER_2D", self.shader_2D) + "\n"
 
-        o += "\n"
-        o += self._write_shader("SHADER_3D", self.shader_3D) + "\n"
+        if self.shader_3D:
+            o += "\n"
+            o += self._write_shader("SHADER_3D", self.shader_3D) + "\n"
 
+        o += "\n"
         o += (
             "\n".join(
                 directive
