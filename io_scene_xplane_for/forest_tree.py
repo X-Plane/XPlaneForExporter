@@ -104,6 +104,7 @@ class ForestTree:
             b.from_mesh(mesh_eval)
             b.transform(object_eval.matrix_world)
             object_eval.to_mesh_clear()
+            # This might just be superstition to make a copy
             cp = b.copy()
             b.free()
             return cp
@@ -122,15 +123,13 @@ class ForestTree:
                         edge_lengths[0] == edge_lengths[2]
                         and edge_lengths[1] == edge_lengths[3]
                     ):
-                        print(obj.name, "is rectangle")
-                        b.clear()
                         return True
             except ValueError:  # calc_edge_angle failed, for instance, over a cube
-                b.free()
                 return False
             else:
-                b.free()
                 return False
+            finally:
+                b.free()
 
         def mesh_is_vertical(obj: bpy.types.Object):
             b = get_bmesh_from_obj(obj)
@@ -161,8 +160,9 @@ class ForestTree:
         def mesh_is_horizontal(obj: bpy.types.Object):
             b = get_bmesh_from_obj(obj)
             verts = list(b.verts)
+            ret = len(set(round(v.co.z, 5) for v in verts)) == 1
             b.free()
-            return len(set(round(v.co.z, 5) for v in verts)) == 1
+            return ret
 
         for child in self.tree_container.children:
             if mesh_is_rectangle(child):

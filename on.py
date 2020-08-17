@@ -94,12 +94,14 @@ def main(argv=None) -> int:
             os.path.join(bpy.utils.user_resource("CONFIG"), "recent-files.txt")
         ) as recent_files:
             try:
-                bpy.ops.wm.open_mainfile(
-                    filepath="{}".format(recent_files.readline().rstrip())
-                )
-            except RuntimeError as e:  # File not found
+                last_file = recent_files.readline().rstrip()
+            except Exception as e:
                 print(e)
-                quit()
+        try:
+            bpy.ops.wm.open_mainfile(filepath=last_file)
+        except RuntimeError as e:  # File not found
+            print(e)
+            quit()
 
     if argv.convert:
         try:
@@ -113,8 +115,6 @@ def main(argv=None) -> int:
             # bpy.ops.xplane.do_249_conversion(workflow_type=argv.convert)
     if argv.export:
         bpy.ops.export.xplane_for()
-
-    quit()
 
 
 if __name__ == "__main__":
