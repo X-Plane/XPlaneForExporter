@@ -44,7 +44,7 @@ class OBJECT_PT_io_scene_xplane_for(bpy.types.Panel):
     def draw(self, context):
         if context.object.type == "EMTPY":
             tree = context.object.xplane_for.tree
-            self.layout.prop(tree, "frequency")
+            self.layout.prop(tree, "weighted_importance")
             self.layout.prop(tree, "max_height")
         elif context.object.parent and len(context.object.data.polygons) > 1:
             self.layout.prop(context.object.xplane_for, "lod_near")

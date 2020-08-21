@@ -57,6 +57,7 @@ class MessageCodes(enum.Enum):
     E006 = "No SHADER_3D found, despite having 3D trees"
     E007 = "Not all textures for SHADER_2D are matching"
     E008 = "Not all textures for SHADER_3D are matching"
+    E010 = "Could not find any forests to export"
     S000 = ".for exported successfully"
 
 

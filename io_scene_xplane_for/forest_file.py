@@ -33,11 +33,11 @@ def create_forest_single_file(exportable_root: forest_helpers.ExportableRoot):
 class ForestFile:
     def __init__(self, root_collection: bpy.types.Collection):
         self.trees: List[forest_tree.ForestTree] = []
-        # self.spacing = root_collection.xplane_for.spacing
-        # self.random = root_collection.xplane_for.random
-        self._root_collection = root_collection
-        file_name = self._root_collection.xplane_for.file_name
-        self.file_name = file_name if file_name else self._root_collection.name
+        self.randomness = root_collection.xplane_for.forest.randomness
+        self.spacing = root_collection.xplane_for.forest.spacing
+        self.root_collection = root_collection
+        file_name = self.root_collection.xplane_for.file_name
+        self.file_name = file_name if file_name else self.root_collection.name
         self.header = forest_header.ForestHeader(self)
 
         if self.has_perlin_params:
@@ -45,7 +45,7 @@ class ForestFile:
             self.group_percentages: Optional[Dict[int, float]] = {
                 # TODO: make safe and make unit test
                 int(child.name.split()[0]): child.xplane_for.percentage
-                for child in self._root_collection.children
+                for child in self.root_collection.children
             }
         else:
             self.group_percentages: Optional[Dict[int, float]] = None
@@ -71,10 +71,10 @@ class ForestFile:
                     MessageCodes.E003,
                     f"The sum of all group percentages must be exactly 100%,"
                     f" but is {total_percentages}%",
-                    self._root_collection,
+                    self.root_collection,
                 )
 
-        for layer_number_provider in self._root_collection.children:
+        for layer_number_provider in self.root_collection.children:
             try:
                 layer_number = int(layer_number_provider.name.split()[0])
                 if layer_number < 0:
@@ -97,6 +97,18 @@ class ForestFile:
                 t.collect()
                 #TODO: Validate we have trees after this
                 self.trees.append(t)
+            trees_in_layer = [tree for tree in self.trees if tree.vert_info.layer_number == layer_number]
+            total_weighted_importance = sum(
+                tree.weighted_importance for tree in trees_in_layer
+            )
+
+            for tree in trees_in_layer:
+                tree.vert_info.freq = (
+                    round(tree.weighted_importance / total_weighted_importance, 2) * 100
+                )
+
+            if sum(round(t.vert_info.freq, 2) for t in trees_in_layer) != 100:
+                assert False, f"Sum of all frequencies for layer {tree.vert_info.layer_number} is not equal to 100.00"
 
         self.header.collect()
 
@@ -104,7 +116,6 @@ class ForestFile:
     def write(self):
         debug = True
         o = ""
-        forest_settings = self._root_collection.xplane_for.forest
 
         o += self.header.write()
         o += "\n"

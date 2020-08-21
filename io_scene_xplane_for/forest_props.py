@@ -3,8 +3,12 @@ from io_scene_xplane_for import forest_constants
 
 
 class XPlaneForTreeSettings(bpy.types.PropertyGroup):
-    # TODO remove and replace with weight within layer
-    frequency: bpy.props.FloatProperty(name="Frequency", min=0.0)
+    weighted_importance: bpy.props.IntProperty(
+        name="Weighted Importance",
+        description="The tree's frequency expressed as a weighted importance relative to others in the layer. The scale is arbitrary",
+        default=1,
+        min=1,
+    )
     max_height: bpy.props.FloatProperty(name="Max. Tree Height", min=0.0)
 
 

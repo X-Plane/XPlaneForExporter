@@ -30,12 +30,12 @@ class ForestHeader:
         def get_params(perlin_type: str):
             """perlin_type is perlin_density, perlin_choice, perlin_height"""
             has_param = getattr(
-                self.forest_file._root_collection.xplane_for.forest,
+                self.forest_file.root_collection.xplane_for.forest,
                 "has_" + perlin_type,
             )
             if has_param:
                 perlin_group = getattr(
-                    self.forest_file._root_collection.xplane_for.forest, perlin_type
+                    self.forest_file.root_collection.xplane_for.forest, perlin_type
                 )
                 return list(
                     itertools.chain(
@@ -69,7 +69,7 @@ class ForestHeader:
                 logger.error(
                     MessageCodes.E007,
                     "Not all vert_quads share the same SHADER_2D material",
-                    self.forest_file._root_collection,
+                    self.forest_file.root_collection,
                 )
             else:
                 shader_materials[0] = bpy.data.materials[shader_2Ds.pop()]
@@ -91,7 +91,7 @@ class ForestHeader:
                 logger.error(
                     MessageCodes.E008,
                     "Not all complex objects share the same SHADER_3D material",
-                    self.forest_file._root_collection,
+                    self.forest_file.root_collection,
                 )
                 raise
 
@@ -103,7 +103,7 @@ class ForestHeader:
     def write(self):
         o = ""
 
-        forest_settings = self.forest_file._root_collection.xplane_for.forest
+        forest_settings = self.forest_file.root_collection.xplane_for.forest
         o += "\n".join(("A", "800", "FOREST",)) + "\n"
 
         o += "\n"
@@ -123,8 +123,8 @@ class ForestHeader:
                     else f"",
                     f"SCALE_X\t{self.scale_x}",
                     f"SCALE_Y\t{self.scale_y}",
-                    f"SPACING\t{' '.join(map(forest_helpers.floatToStr,forest_settings.spacing))}",
-                    f"RANDOM\t{' '.join(map(forest_helpers.floatToStr,forest_settings.randomness))}",
+                    f"SPACING\t{' '.join(map(forest_helpers.floatToStr,self.forest_file.spacing))}",
+                    f"RANDOM\t{' '.join(map(forest_helpers.floatToStr,self.forest_file.randomness))}",
                     "" if forest_settings.cast_shadow else "NO_SHADOW",
                 )
                 if directive
