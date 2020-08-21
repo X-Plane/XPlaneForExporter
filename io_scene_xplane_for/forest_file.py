@@ -27,11 +27,11 @@ def create_forest_single_file(exportable_root: forest_helpers.ExportableRoot):
 class ForestFile:
     def __init__(self, root_collection: bpy.types.Collection):
         self.trees: List[forest_tree.ForestTree] = []
-        # self.spacing = root_collection.xplane_for.spacing
-        # self.random = root_collection.xplane_for.random
-        self._root_collection = root_collection
-        file_name = self._root_collection.xplane_for.file_name
-        self.file_name = file_name if file_name else self._root_collection.name
+        self.randomness = root_collection.xplane_for.forest.randomness
+        self.spacing = root_collection.xplane_for.forest.spacing
+        self.root_collection = root_collection
+        file_name = self.root_collection.xplane_for.file_name
+        self.file_name = file_name if file_name else self.root_collection.name
         self.texture_path: pathlib.Path = pathlib.Path()
         self.scale_x: int = None
         self.scale_y: int = None
@@ -39,11 +39,11 @@ class ForestFile:
         def get_params(perlin_type: str):
             """perlin_type is perlin_density, perlin_choice, perlin_height"""
             has_param = getattr(
-                self._root_collection.xplane_for.forest, "has_" + perlin_type
+                self.root_collection.xplane_for.forest, "has_" + perlin_type
             )
             if has_param:
                 perlin_group = getattr(
-                    self._root_collection.xplane_for.forest, perlin_type
+                    self.root_collection.xplane_for.forest, perlin_type
                 )
                 return list(
                     itertools.chain(
@@ -65,7 +65,7 @@ class ForestFile:
             self.group_percentages: Optional[Dict[int, float]] = {
                 # TODO: make safe and make unit test
                 int(child.name.split()[0]): child.xplane_for.percentage
-                for child in self._root_collection.children
+                for child in self.root_collection.children
             }
         else:
             self.group_percentages: Optional[Dict[int, float]] = None
@@ -81,10 +81,10 @@ class ForestFile:
                     MessageCodes.E003,
                     f"The sum of all group percentages must be exactly 100%,"
                     f" but is {total_percentages}%",
-                    self._root_collection,
+                    self.root_collection,
                 )
 
-        for layer_number_provider in self._root_collection.children:
+        for layer_number_provider in self.root_collection.children:
             try:
                 layer_number = int(layer_number_provider.name.split()[0])
                 if layer_number < 0:
@@ -143,7 +143,7 @@ class ForestFile:
 
     def write(self):
         debug = True
-        forest_settings = self._root_collection.xplane_for.forest
+        forest_settings = self.root_collection.xplane_for.forest
 
         def fmt_perlin_params(directive, perlin_params):
             try:
@@ -169,8 +169,8 @@ class ForestFile:
                 else f"",
                 f"SCALE_X\t{self.scale_x}",
                 f"SCALE_Y\t{self.scale_y}",
-                f"SPACING\t{' '.join(map(forest_helpers.floatToStr,forest_settings.spacing))}",
-                f"RANDOM\t{' '.join(map(forest_helpers.floatToStr,forest_settings.randomness))}",
+                f"SPACING\t{' '.join(map(forest_helpers.floatToStr,self.spacing))}",
+                f"RANDOM\t{' '.join(map(forest_helpers.floatToStr,self.randomness))}",
                 f"{'' if forest_settings.cast_shadow else 'NO_SHADOW'}",
                 "",
                 fmt_perlin_params("DENSITY_PARAMS", self.perlin_density),

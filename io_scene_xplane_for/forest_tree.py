@@ -155,7 +155,6 @@ class ForestTree:
 
             b.from_mesh(mesh_eval)
             b.transform(object_eval.matrix_world)
-            object_eval.to_mesh_clear()
 
             def edge_to_vec(edge) -> mathutils.Vector:
                 return forest_helpers.round_vec(
@@ -169,35 +168,35 @@ class ForestTree:
 
             # print(*( v for v in (vecs_of_edge(e) for e in b.edges)), sep="\n")
             z_axis = mathutils.Vector((0, 0, 1))
-            top, left, bottom, right = map(edge_to_vec, b.edges)
-            # TODO: Validate left is <= 0 for offset purposes
-            print("--- dot ---")
-            print(*(round(edge.dot(z_axis), 5) for edge in [left, right]))
-            print("------------")
-            print(
-                "--- top left bottom right",
-                *zip([top, left, bottom, right,], ["top", "left", "bottom", "right"]),
-                sep="\n",
-            )
+            def verts_from_edge_global(
+                edge: bpy.types.MeshEdge, matrix_world: mathutils.Matrix
+            ) -> Tuple[mathutils.Vector, mathutils.Vector]:
+                return tuple(
+                    forest_helpers.round_vec(
+                        matrix_world.translation + object_eval.data.vertices[vi].co
+                    )
+                    for vi in edge.vertices
+                )
+
+            left, bottom, right, top = [
+                verts_from_edge_global(edge, object_eval.matrix_world)
+                for edge in object_eval.data.edges
+            ]
+            object_eval.to_mesh_clear()
 
             return (
-                all(round(v.co.z, 5) == 0 for v in itertools.islice(b.verts, 2))
-                and round(top.z, 5) > 0
-                and round(sum(edge.dot(z_axis) for edge in [left, right]), 5) == 0.0
+                all(round(v.z, 5) == 0 for v in bottom)
+                and all(round(v.z, 5) > 0 for v in top)
+                and round(sum(edge.dot(z_axis) for edge in [left[0], right[0]]), 5) == 0.0
+                and left[0].x <= 0
             )
 
         def mesh_is_horizontal(obj: bpy.types.Object):
-            b = bmesh.new()
             object_eval = obj.evaluated_get(depsgraph)
-            mesh_eval = object_eval.to_mesh(
-                preserve_all_data_layers=False, depsgraph=depsgraph
-            )
-
-            b.from_mesh(mesh_eval)
-            b.transform(object_eval.matrix_world)
-            object_eval.to_mesh_clear()
             # print(*((v.co) for v in b.verts))
-            return len(set(round(v.co.z, 5) for v in b.verts)) == 1
+            ret = len(set(round(v.co.z, 5) for v in object_eval.data.vertices)) == 1
+            object_eval.to_mesh_clear()
+            return ret
 
         for child in self.tree_container.children:
             if mesh_is_rectangle(child):

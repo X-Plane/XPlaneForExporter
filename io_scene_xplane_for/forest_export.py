@@ -3,6 +3,7 @@
 import os
 import os.path
 import sys
+
 # from .xplane_config import getDebug
 # from .xplane_helpers import XPlaneLogger, logger
 from typing import IO, Any, List, Optional
@@ -36,6 +37,7 @@ class EXPORT_OT_XPlaneFor(bpy.types.Operator, ExportHelper):
         continue_on_error = False
         # self._startLogging()
         logger.reset()
+        logger.transports.append(forest_logger.ForestLogger.InternalTextTransport())
         # --- collect ---
         forest_files = forest_file.create_potential_forest_files()
         # ---------------
@@ -45,7 +47,7 @@ class EXPORT_OT_XPlaneFor(bpy.types.Operator, ExportHelper):
             o = forest_file.write()
             if debug:
                 print("---", o, "---", sep="\n")
-            file_name = bpy.path.ensure_ext(forest_file._root_collection.name, ".for")
+            file_name = bpy.path.ensure_ext(forest_file.root_collection.name, ".for")
             if logger.errors:
                 return
             blend_path = bpy.context.blend_data.filepath
@@ -80,20 +82,19 @@ class EXPORT_OT_XPlaneFor(bpy.types.Operator, ExportHelper):
             except OSError:
                 continue
 
-        if not forest_files:
-            # logger.error("Could not find any Root Forests, did you forget check 'Root Forest'?")
-            # logger.reset()
-            # logger.end
+        if not forest_files and not logger.errors:
+            logger.error(
+                MessageCodes.E011,
+                "Could not find any Root Forests, you must use 2 layers of collections to make forests and their layers with trees",
+                None,
+            )
             return {"CANCELLED"}
-        #        elif logger.errors:
-        # logger.clear()
-        #            return {"CANCELLED"}
-        #        elif not logger.errors and forest_files:
+        elif logger.errors:
+            return {"CANCELLED"}
         else:
             logger.success(
                 forest_logger.MessageCodes.S000, "Export finished without errors", None
             )
-            logger.reset()
             return {"FINISHED"}
 
     def invoke(self, context, event):
