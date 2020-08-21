@@ -51,7 +51,7 @@ class MessageCodes(enum.Enum):
     E002 = "Couldn't find texture file"
     E003 = "GROUP percentages do not add up to 100"
     E004 = "Tree wrapper does not have vertical quad"
-    E011 = "Could not find any forests to export"
+    E010 = "Could not find any forests to export"
     S000 = ".for exported successfully"
 
 

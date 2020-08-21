@@ -106,6 +106,18 @@ class ForestFile:
                 t = forest_tree.ForestTree(forest_empty, layer_number)
                 t.collect()
                 self.trees.append(t)
+            trees_in_layer = [tree for tree in self.trees if tree.vert_info.layer_number == layer_number]
+            total_weighted_importance = sum(
+                tree.weighted_importance for tree in trees_in_layer
+            )
+
+            for tree in trees_in_layer:
+                tree.vert_info.freq = (
+                    round(tree.weighted_importance / total_weighted_importance, 2) * 100
+                )
+
+            if sum(round(t.vert_info.freq, 2) for t in trees_in_layer) != 100:
+                assert False, f"Sum of all frequencies for layer {tree.vert_info.layer_number} is not equal to 100.00"
 
         try:
             img = (

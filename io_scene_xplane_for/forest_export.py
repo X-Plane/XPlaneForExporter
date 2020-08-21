@@ -75,7 +75,6 @@ class EXPORT_OT_XPlaneFor(bpy.types.Operator, ExportHelper):
                         None,
                     )
 
-        print("num forest files", len(forest_files))
         for ff in forest_files:
             try:
                 write_to_disk(ff)
@@ -84,7 +83,7 @@ class EXPORT_OT_XPlaneFor(bpy.types.Operator, ExportHelper):
 
         if not forest_files and not logger.errors:
             logger.error(
-                MessageCodes.E011,
+                MessageCodes.E010,
                 "Could not find any Root Forests, you must use 2 layers of collections to make forests and their layers with trees",
                 None,
             )

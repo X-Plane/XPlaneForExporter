@@ -17,7 +17,7 @@ class OBJECT_PT_io_scene_xplane_for(bpy.types.Panel):
 
     def draw(self, context):
         tree = context.object.xplane_for.tree
-        self.layout.prop(tree, "frequency")
+        self.layout.prop(tree, "weighted_importance")
         self.layout.prop(tree, "max_height")
 
 
