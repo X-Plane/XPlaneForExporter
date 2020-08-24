@@ -1,3 +1,7 @@
+NORMAL_MODE_NONE = "NORMAL_NONE"
+NORMAL_MODE_METALNESS = "NORMAL_METALNESS"
+NORMAL_MODE_TRANSLUCENCY = "NORMAL_TRANSLUCENCY"
+
 # Used in determining whether the difference between values
 # is large enough to warrent emitting an animation
 PRECISION_KEYFRAME = 5

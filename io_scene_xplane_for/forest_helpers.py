@@ -113,7 +113,7 @@ def is_exportable_root(
     )
 
 
-def round_vec(v: mathutils.Vector, ndigits: int=5) -> mathutils.Vector:
+def round_vec(v: mathutils.Vector, ndigits: int = 5) -> mathutils.Vector:
     return mathutils.Vector(round(comp, ndigits) for comp in v)
 
 

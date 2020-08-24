@@ -1,11 +1,59 @@
 import bpy
-from . import forest_constants
+from io_scene_xplane_for import forest_constants
 
 
 class XPlaneForTreeSettings(bpy.types.PropertyGroup):
-    # TODO remove and replace with weight within layer
-    frequency: bpy.props.FloatProperty(name="Frequency", min=0.0)
+    weighted_importance: bpy.props.IntProperty(
+        name="Weighted Importance",
+        description="The tree's frequency expressed as a weighted importance relative to others in the layer. The scale is arbitrary",
+        default=1,
+        min=1,
+    )
     max_height: bpy.props.FloatProperty(name="Max. Tree Height", min=0.0)
+
+
+class XPlaneForMaterialSettings(bpy.types.PropertyGroup):
+    texture_path: bpy.props.StringProperty(
+        name="Texture File",
+        description="Forest texture file",
+        default="",
+        subtype="FILE_PATH",
+    )
+    texture_path_normal: bpy.props.StringProperty(
+        name="Texture File (Normal)",
+        description="(Normal) Forest texture file",
+        default="",
+        subtype="FILE_PATH",
+    )
+    texture_path_normal_ratio: bpy.props.FloatProperty(
+        name="Normal Texture File (ratio)",
+        description="The number of times a normal map repeates for every tile of the albedo map. The ratio can change 'noisy' normal maps to be higher resolution.",
+        default=1.0,
+        min=0.0,
+    )
+    has_no_blend: bpy.props.BoolProperty(name="Has No-Blend")
+    no_blend: bpy.props.FloatProperty(name="No-blend alpha cutoff level",
+            description="all pixels whose alpha is below the cutoff level are discarded, all that are above are opaque.",
+            default=0.0,
+            )
+    has_specular: bpy.props.BoolProperty(name="Has Specular")
+    specular: bpy.props.FloatProperty(name="Specular", description="A multiplier to the specularity level of the material", default=1.0, min=0, max=1)
+
+    has_bump_level: bpy.props.BoolProperty(name="Has Bump Level")
+    bump_level: bpy.props.FloatProperty(name="Bump Level", description="scales the height of the normal map bumps", default=0.0, min=0, max=1)
+
+    no_shadow: bpy.props.BoolProperty(name="No Shadow", description="exampts the art asset from shadow generation")
+
+    shadow_blend: bpy.props.BoolProperty(name="Shadow Blend", description="Sets Blending Mode to Shadow blending - where alpha acts as a cutoff when shadow maps are drawn")
+
+    normal_mode:bpy.props.EnumProperty(
+            items=(
+                (forest_constants.NORMAL_MODE_NONE, "None", "No normal mode set, matching legacy behavior"),
+                (forest_constants.NORMAL_MODE_METALNESS, "Normal Metalness","Normal Metalness"),
+                (forest_constants.NORMAL_MODE_TRANSLUCENCY, "Normal Translucency", "Normal Translucency")),
+            name="Normal Mode",
+            default=forest_constants.NORMAL_MODE_NONE
+        )
 
 
 class XPlaneForObjectSettings(bpy.types.PropertyGroup):
@@ -13,6 +61,15 @@ class XPlaneForObjectSettings(bpy.types.PropertyGroup):
         type=XPlaneForTreeSettings,
         name="Tree Settings",
         description="Settings for a tree that an empty represents",
+    )
+
+    lod_near: bpy.props.IntProperty(
+        name="LOD (Near)", description="The near plane of the LOD", min=0
+    )
+    lod_far: bpy.props.IntProperty(
+        name="LOD (Far)",
+        description="The far plane of the LOD, must be greater than the near",
+        min=1,
     )
 
 
@@ -114,21 +171,6 @@ class XPlaneForForestSettings(bpy.types.PropertyGroup):
         description="Collection of surface types to skip, repeats not printed twice",
     )
 
-    texture_path: bpy.props.StringProperty(
-        name="Texture File",
-        description="Forest texture file",
-        default="",
-        subtype="FILE_PATH",
-    )
-
-    texture_path_normal: bpy.props.StringProperty(
-        name="Texture File (Normal)",
-        description="(Normal) Forest texture file",
-        default="",
-        subtype="FILE_PATH",
-    )
-
-
 class XPlaneForCollectionSettings(bpy.types.PropertyGroup):
     forest: bpy.props.PointerProperty(type=XPlaneForForestSettings)
     file_name: bpy.props.StringProperty(
@@ -157,6 +199,7 @@ _classes = (
     XPlaneForForestSettings,
     XPlaneForObjectSettings,
     XPlaneForCollectionSettings,
+    XPlaneForMaterialSettings,
 )
 
 
@@ -170,6 +213,10 @@ def register():
 
     bpy.types.Object.xplane_for = bpy.props.PointerProperty(
         type=XPlaneForObjectSettings, name=".for Object Settings"
+    )
+
+    bpy.types.Material.xplane_for = bpy.props.PointerProperty(
+        type=XPlaneForMaterialSettings, name=".for Material Settings"
     )
 
 
