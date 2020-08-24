@@ -47,7 +47,7 @@ class EXPORT_OT_XPlaneFor(bpy.types.Operator, ExportHelper):
             o = forest_file.write()
             if debug:
                 print("---", o, "---", sep="\n")
-            file_name = bpy.path.ensure_ext(forest_file.root_collection.name, ".for")
+            file_name = bpy.path.ensure_ext(forest_file.file_name, ".for")
             if logger.errors:
                 return
             blend_path = bpy.context.blend_data.filepath

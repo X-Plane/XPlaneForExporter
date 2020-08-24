@@ -98,6 +98,11 @@ class ForestTree:
 
         def get_bmesh_from_obj(obj: bpy.types.Object) -> bmesh.types.BMesh:
             b = bmesh.new()
+            bpy.context.view_layer.objects[obj.name].select_set(True)
+            bpy.ops.object.transform_apply(
+                location=False, rotation=True, scale=False,
+            )
+            bpy.context.view_layer.objects[obj.name].select_set(False)
             object_eval = obj.evaluated_get(depsgraph)
             mesh_eval = object_eval.to_mesh(
                 preserve_all_data_layers=False, depsgraph=depsgraph
@@ -129,7 +134,7 @@ class ForestTree:
             except ValueError:  # calc_edge_angle failed, for instance, over a cube
                 return False
             else:
-                #print(obj.name, "is not a rectangle")
+                # print(obj.name, "is not a rectangle")
                 return False
             finally:
                 b.free()
@@ -145,6 +150,11 @@ class ForestTree:
             )
 
         def mesh_is_vertical(obj: bpy.types.Object):
+            bpy.context.view_layer.objects[obj.name].select_set(True)
+            bpy.ops.object.transform_apply(
+                location=False, rotation=True, scale=False,
+            )
+            bpy.context.view_layer.objects[obj.name].select_set(False)
             object_eval = obj.evaluated_get(depsgraph)
             z_axis = mathutils.Vector((0, 0, 1))
 
@@ -158,9 +168,10 @@ class ForestTree:
             ret = (
                 all(round(v.z, 5) == 0 for v in bottom)
                 and all(round(v.z, 5) > 0 for v in top)
-                and round(sum(edge.dot(z_axis) for edge in [left[0], right[0]]), 5)
-                == 0.0
-                and left[0].x <= 0
+                #TODO: These should work, but, we'll just trust the author instead of bothering with it more
+                #and round(sum(edge.dot(z_axis) for edge in [left[0], right[0]]), 5)
+                #== 0.0
+                #and left[0].x <= 0
             )
             object_eval.to_mesh_clear()
             return ret
@@ -174,13 +185,13 @@ class ForestTree:
         for child in self.tree_container.children:
             if mesh_is_rectangle(child):
                 if mesh_is_vertical(child):
-                    #print(child.name, "is vertical")
+                    # print(child.name, "is vertical")
                     self.vert_info.quads += 1
                     # TODO: must ensure that both quads are identical,
                     # but rotated at 90 degrees or only pick the first one you see
                     self.vert_quad = child
                 elif mesh_is_horizontal(child):
-                    #print(child.name, "is horizontal")
+                    # print(child.name, "is horizontal")
                     self.horz_quad = child
                 else:
                     pass
