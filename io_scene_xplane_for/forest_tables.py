@@ -91,6 +91,7 @@ def write_mesh_table(complex_object: bpy.types.Object) -> str:
         # To reverse the winding order for X-Plane from CCW to CW,
         # we iterate backwards through the mesh data structures
         for i in reversed(range(0, 3)):
+
             def make_vt_entry(tmp_face: _TmpFace, i: int):
                 vt_index = tmp_face.indices[i]
                 vertex = forest_helpers.vec_b_to_x(mesh.vertices[vt_index].co)
@@ -108,7 +109,7 @@ def write_mesh_table(complex_object: bpy.types.Object) -> str:
                     normal=normal.freeze(),
                     s=uv[0],
                     t=uv[1],
-                    weight=weight
+                    weight=weight,
                 )
                 return vt_entry
 
@@ -124,7 +125,19 @@ def write_mesh_table(complex_object: bpy.types.Object) -> str:
 
     o = ""
     o += "\n"
-    o += f"MESH\t{complex_object.data.name}\t{complex_object.xplane_for.lod_near}\t{complex_object.xplane_for.lod_far}\t{len(vertices)}\t{len(indices)}\n"
+    o += (
+        "\t".join(
+            (
+                f"MESH",
+                f"{complex_object.data.name}",
+                f"{complex_object.data.xplane_for.lod_near}",
+                f"{complex_object.data.xplane_for.lod_far}",
+                f"{len(vertices)}",
+                f"{len(indices)}",
+            )
+        )
+        + "\n"
+    )
     o += "\n".join(str(vt_entry) for vt_entry in vertices) + "\n"
     o += (
         "\n".join(

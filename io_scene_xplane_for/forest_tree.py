@@ -365,6 +365,12 @@ class ForestTree:
                 f"#Y_QUAD\t<left>	<bottom>	<width>	<height>	<offset_center_x>	<offset_center_y>	<width>	<elevation>	<rotation>\n"
                 f"Y_QUAD\t{self.horz_info}"
             )
-        o += "\n".join(f"MESH_3D\t{mesh_name}" for mesh_name in {obj.data.name for obj in self.complex_objects})
+        o += "\n".join(
+            f"MESH_3D\t{mesh_name}"
+            for mesh_name in sorted(
+                {obj.data.name for obj in self.complex_objects},
+                key=lambda mesh_name: mesh_name,
+            )
+        )
 
         return o

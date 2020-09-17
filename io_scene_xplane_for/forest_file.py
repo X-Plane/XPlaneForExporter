@@ -145,14 +145,16 @@ class ForestFile:
         o += self.header.write()
         o += "\n"
         written_meshes = set()
-        for complex_object in set(
-            itertools.chain.from_iterable(t.complex_objects for t in self.trees)
+        for complex_object in sorted(
+            set(itertools.chain.from_iterable(t.complex_objects for t in self.trees)),
+            key=lambda o: o.data.name,
         ):
             object_name = complex_object.name
             mesh_name = complex_object.data.name
             if mesh_name not in written_meshes:
                 o += forest_tables.write_mesh_table(complex_object=complex_object)
                 written_meshes.add(mesh_name)
+
         o += "\n"
         # for group in groups
         for layer_number, trees_in_layer in itertools.groupby(
