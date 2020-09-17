@@ -31,11 +31,26 @@ class XPlaneForMaterialSettings(bpy.types.PropertyGroup):
         default=1.0,
         min=0.0,
     )
-    has_no_blend: bpy.props.BoolProperty(name="Has No-Blend")
-    no_blend: bpy.props.FloatProperty(
+    blend_mode: bpy.props.EnumProperty(
+        items=(
+            (forest_constants.BLEND_NONE, "None", "No blend mode chosen"),
+            (forest_constants.BLEND_NO_BLEND, "No Blend", "No Blend does not blend Alpha"),
+            (forest_constants.BLEND_BLEND_HASH, "Blend Hash", "Like BLEND_CUT but with an alpha-dissolve"),
+        ),
+        description="Blend mode for shader",
+        default=forest_constants.BLEND_NONE,
+    )
+    no_blend_level: bpy.props.FloatProperty(
         name="No-blend alpha cutoff level",
-        description="all pixels whose alpha is below the cutoff level are discarded, all that are above are opaque.",
+        description="All pixels whose alpha is below the cutoff level are discarded, all that are above are opaque.",
         default=0.0,
+        min=0.0,
+    )
+    blend_hash_level: bpy.props.FloatProperty(
+        name="Blend Hash alpha Level",
+        # description="
+        default=0.0,
+        min=0.0,
     )
     has_specular: bpy.props.BoolProperty(name="Has Specular")
     specular: bpy.props.FloatProperty(

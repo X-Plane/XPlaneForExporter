@@ -176,8 +176,11 @@ class ForestHeader:
                 f"TEXTURE_NORMAL {forest_helpers.floatToStr(mat_settings.texture_path_normal_ratio)}\t{texture_path_normal}"
                 if mat_settings.texture_path_normal
                 else "",
-                f"NO_BLEND {forest_helpers.floatToStr(mat_settings.no_blend)}"
-                if mat_settings.has_no_blend
+                f"NO_BLEND {forest_helpers.floatToStr(mat_settings.no_blend_level)}"
+                if mat_settings.blend_mode == forest_constants.BLEND_NO_BLEND
+                else "",
+                f"BLEND_HASH {forest_helpers.floatToStr(mat_settings.blend_hash_level)}"
+                if mat_settings.blend_mode == forest_constants.BLEND_BLEND_HASH
                 else "",
                 f"SPECULAR {forest_helpers.floatToStr(mat_settings.specular)}"
                 if mat_settings.has_specular

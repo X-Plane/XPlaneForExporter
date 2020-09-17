@@ -1,6 +1,7 @@
 import itertools
 import bpy
 from . import forest_helpers
+from . import forest_constants
 
 
 class DATA_PT_io_scene_xplane_for(bpy.types.Panel):
@@ -47,9 +48,13 @@ class MATERIAL_PT_io_scene_xplane_for(bpy.types.Panel):
                 row.prop(material.xplane_for, attr)
 
         has_prop_pairing(box, "texture_path_normal", "texture_path_normal_ratio")
-        has_prop_pairing(box, "has_no_blend", "no_blend")
         has_prop_pairing(box, "has_specular", "specular")
         has_prop_pairing(box, "has_bump_level", "bump_level")
+        box.row().prop(material.xplane_for, "blend_mode", expand=True)
+        if material.xplane_for.blend_mode == forest_constants.BLEND_NO_BLEND:
+            box.row().prop(material.xplane_for, "no_blend_level")
+        elif material.xplane_for.blend_mode == forest_constants.BLEND_BLEND_HASH:
+            box.row().prop(material.xplane_for, "blend_hash_level")
         box.row().prop(material.xplane_for, "normal_mode")
 
 
