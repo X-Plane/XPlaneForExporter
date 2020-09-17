@@ -124,7 +124,7 @@ def write_mesh_table(complex_object: bpy.types.Object) -> str:
 
     o = ""
     o += "\n"
-    o += f"MESH\t{complex_object.name}\t{complex_object.xplane_for.lod_near}\t{complex_object.xplane_for.lod_far}\t{len(vertices)}\t{len(indices)}\n"
+    o += f"MESH\t{complex_object.data.name}\t{complex_object.xplane_for.lod_near}\t{complex_object.xplane_for.lod_far}\t{len(vertices)}\t{len(indices)}\n"
     o += "\n".join(str(vt_entry) for vt_entry in vertices) + "\n"
     o += (
         "\n".join(
