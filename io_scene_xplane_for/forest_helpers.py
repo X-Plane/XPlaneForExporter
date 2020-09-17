@@ -112,6 +112,17 @@ def is_exportable_root(
         and is_visible_in_viewport(potential_root, view_layer)
     )
 
+def get_all_children_recursive(
+        datablock:Union[bpy.types.Collection, bpy.types.Object]
+        )->List[Union[bpy.types.Collection, bpy.types.Object]]:
+    c = []
+    def _get_all_children_recursive(db):
+        c.extend(db.children)
+        for child in db.children:
+            get_all_children_recursive(child)
+    _get_all_children_recursive(datablock)
+
+    return c
 
 def round_vec(v: mathutils.Vector, ndigits: int = 5) -> mathutils.Vector:
     return mathutils.Vector(round(comp, ndigits) for comp in v)

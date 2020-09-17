@@ -118,7 +118,7 @@ class ForestTestCase(unittest.TestCase):
                 f"Expected {expected_logger_codes} logger errors, got {[m.msg_code for m in logger.messages]}"
             ) from None
         else:
-            logger.clearMessages()
+            logger.messages.clear()
 
     def assertMatricesEqual(self, mA, mB, tolerance=FLOAT_TOLERANCE):
         for row_a, row_b in zip(mA, mB):

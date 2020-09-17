@@ -9,7 +9,7 @@ import bpy
 import io_scene_xplane_for
 import tests
 from io_scene_xplane_for.forest_logger import MessageCodes, logger
-from tests import ForestTestCase, runTestCases
+from tests import ForestTestCase, runTestCases, make_fixture_path
 
 _dirname = os.path.dirname(__file__)
 

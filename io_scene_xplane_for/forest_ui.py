@@ -11,7 +11,7 @@ class MATERIAL_PT_io_scene_xplane_for(bpy.types.Panel):
 
     @classmethod
     def poll(self, context):
-        return True
+        return bool(context.material)
 
     def draw(self, context):
         material = context.material
@@ -42,7 +42,7 @@ class OBJECT_PT_io_scene_xplane_for(bpy.types.Panel):
         return context.object.type in {"EMPTY", "MESH"}
 
     def draw(self, context):
-        if context.object.type == "EMTPY":
+        if context.object.type == "EMPTY":
             tree = context.object.xplane_for.tree
             self.layout.prop(tree, "weighted_importance")
             self.layout.prop(tree, "max_height")

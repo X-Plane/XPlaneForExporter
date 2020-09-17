@@ -55,7 +55,7 @@ class ForestHeader:
     def collect(self):
         """Must be called after trees are collected. Raises ValueError for various problems"""
 
-        def collect_shader_materials() -> Tuple[bpy.types.Material, bpy.types.Material]:
+        def collect_shader_materials() -> Tuple[bpy.types.Material, Optional[bpy.types.Material]]:
             shader_materials = [None, None]
             try:
                 shader_2Ds = {
@@ -132,8 +132,6 @@ class ForestHeader:
             + "\n"
         )
         o += self._write_perlin_params()
-
-        print(o)
 
         return o
 

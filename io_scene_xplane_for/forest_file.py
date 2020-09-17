@@ -20,7 +20,10 @@ def create_potential_forest_files() -> List["forest_file.ForestFile"]:
     for exportable_root in forest_helpers.get_exportable_roots_in_scene(
         bpy.context.scene, bpy.context.view_layer
     ):
-        forest_files.append(create_forest_single_file(exportable_root))
+        try:
+            forest_files.append(create_forest_single_file(exportable_root))
+        except ValueError:
+            pass
     return forest_files
 
 
@@ -43,7 +46,6 @@ class ForestFile:
         if self.has_perlin_params:
             # Maps layer_number to percentage for use with GROUPs
             self.group_percentages: Optional[Dict[int, float]] = {
-                # TODO: make safe and make unit test
                 int(child.name.split()[0]): child.xplane_for.percentage
                 for child in self.root_collection.children
             }
@@ -93,11 +95,28 @@ class ForestFile:
                 and obj.children
                 and forest_helpers.is_visible_in_viewport(obj, bpy.context.view_layer)
             ]:
-                t = forest_tree.ForestTree(forest_empty, layer_number)
-                t.collect()
-                #TODO: Validate we have trees after this
-                self.trees.append(t)
-            trees_in_layer = [tree for tree in self.trees if tree.vert_info.layer_number == layer_number]
+                try:
+                    t = forest_tree.ForestTree(forest_empty, layer_number)
+                except ValueError:
+                    pass
+                else:
+                    t.collect()
+                    self.trees.append(t)
+
+            if not self.trees:
+                logger.error(
+                    MessageCodes.E011,
+                    f"'{self.file_name}' contains no valid tree containers",
+                    self.root_collection,
+                )
+                raise ValueError
+
+            trees_in_layer = [
+                tree
+                for tree in self.trees
+                if tree.vert_info.layer_number == layer_number
+            ]
+
             total_weighted_importance = sum(
                 tree.weighted_importance for tree in trees_in_layer
             )
@@ -106,12 +125,18 @@ class ForestFile:
                 tree.vert_info.freq = (
                     round(tree.weighted_importance / total_weighted_importance, 2) * 100
                 )
+            total_tree_freqs = sum(round(t.vert_info.freq, 2) for t in trees_in_layer)
+            # To ensure we have 100% in this layer we adjust the first one of
+            # the trees's frequency so it rounds to 100%
+            trees_in_layer[0].vert_info.freq += 100 - total_tree_freqs
+            total_tree_freqs = sum(round(t.vert_info.freq, 2) for t in trees_in_layer)
 
-            if sum(round(t.vert_info.freq, 2) for t in trees_in_layer) != 100:
-                assert False, f"Sum of all frequencies for layer {tree.vert_info.layer_number} is not equal to 100.00"
+            if total_tree_freqs != 100:
+                assert (
+                    False
+                ), f"Sum of all frequencies for layer {trees_in_layer[0].vert_info.layer_number} is not equal to 100.00, is {total_tree_freqs}"
 
         self.header.collect()
-
 
     def write(self):
         debug = True
@@ -119,8 +144,9 @@ class ForestFile:
 
         o += self.header.write()
         o += "\n"
-        for complex_object in itertools.chain.from_iterable(
-                t.complex_objects for t in self.trees):
+        for complex_object in set(
+            itertools.chain.from_iterable(t.complex_objects for t in self.trees)
+        ):
             o += forest_tables.write_mesh_table(complex_object=complex_object)
         o += "\n"
         # for group in groups
@@ -128,7 +154,6 @@ class ForestFile:
             self.trees, key=lambda tree: tree.vert_info.layer_number
         ):
             if self.has_perlin_params:
-                pprint.pprint(self.group_percentages)
                 o += f"GROUP {layer_number} {forest_helpers.floatToStr(self.group_percentages[layer_number])}\n"
                 for tree in trees_in_layer:
                     o += "\n".join(

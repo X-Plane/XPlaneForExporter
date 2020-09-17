@@ -58,6 +58,8 @@ class MessageCodes(enum.Enum):
     E007 = "Not all textures for SHADER_2D are matching"
     E008 = "Not all textures for SHADER_3D are matching"
     E010 = "Could not find any forests to export"
+    E011 = "No valid trees found"
+    E012 = "Image size x or y can't be 0,0"
     S000 = ".for exported successfully"
 
 
@@ -86,7 +88,13 @@ class ForestLogger(metaclass=_Singleton):
 
         @property
         def msg_type(self):
-            return {t.name[0]: t.value for t in MessageTypes}[self.msg_code.name[0]]
+            d = {
+                "I": MessageTypes.INFO,
+                "W": MessageTypes.WARNING,
+                "E": MessageTypes.ERROR,
+                "S": MessageTypes.SUCCESS,
+            }
+            return d[self.msg_code.name[0]]
 
     class ConsoleTransport:
         def __init__(self):
