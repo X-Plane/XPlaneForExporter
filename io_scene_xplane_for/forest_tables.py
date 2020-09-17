@@ -20,8 +20,6 @@ class _TmpFace:
         Tuple[float, float, float],
     ]
     uvs: Tuple[mathutils.Vector, mathutils.Vector, mathutils.Vector]
-    # TODO
-    # bone_weight:float
 
 
 @dataclasses.dataclass(eq=True, frozen=True)
@@ -44,7 +42,7 @@ class _TmpVert:
         )
 
 
-def write_mesh_table(complex_object) -> str:
+def write_mesh_table(complex_object: bpy.types.Object) -> str:
     """
     Returns the MESH.... VERTEX.... IDX.... table for one object
     """
@@ -60,19 +58,17 @@ def write_mesh_table(complex_object) -> str:
     mesh.calc_normals_split()
     mesh.calc_loop_triangles()
 
-    def make_tmp_faces(mesh) -> Iterable[_TmpFace]:
+    def make_tmp_faces(mesh: bpy.types.Mesh) -> Iterable[_TmpFace]:
         try:
             uv_layer = mesh.uv_layers[eval_obj.data.uv_layers.active.name]
         except (KeyError, TypeError) as e:
             uv_layer = None
 
-        blank_uvs = (mathutils.Vector((0.0, 0.0)),) * 3
-
         for tri in mesh.loop_triangles:
             uvs = (
                 tuple(uv_layer.data[loop_index].uv for loop_index in tri.loops)
                 if uv_layer
-                else blank_uvs
+                else (mathutils.Vector((0.0, 0.0)),) * 3
             )
             yield _TmpFace(
                 original_face=tri,
@@ -95,7 +91,6 @@ def write_mesh_table(complex_object) -> str:
         # To reverse the winding order for X-Plane from CCW to CW,
         # we iterate backwards through the mesh data structures
         for i in reversed(range(0, 3)):
-
             def make_vt_entry(tmp_face: _TmpFace, i: int):
                 vt_index = tmp_face.indices[i]
                 vertex = forest_helpers.vec_b_to_x(mesh.vertices[vt_index].co)
@@ -105,9 +100,16 @@ def write_mesh_table(complex_object) -> str:
                     else tmp_face.normals
                 )
                 uv = tmp_face.uvs[i]
+                v_groups = mesh.vertices[vt_index].groups
+                # TODO: To avoid confusion we only a VT in one group at a time. Right now there is no validation
+                weight = v_groups[0].weight if v_groups else 0
                 vt_entry = _TmpVert(
-                    location=vertex.freeze(), normal=normal.freeze(), s=uv[0], t=uv[1], weight=0
-                )  # , weight=weight)
+                    location=vertex.freeze(),
+                    normal=normal.freeze(),
+                    s=uv[0],
+                    t=uv[1],
+                    weight=weight
+                )
                 return vt_entry
 
             vt_entry = make_vt_entry(tmp_face, i)
@@ -124,10 +126,13 @@ def write_mesh_table(complex_object) -> str:
     o += "\n"
     o += f"MESH\t{complex_object.name}\t{complex_object.xplane_for.lod_near}\t{complex_object.xplane_for.lod_far}\t{len(vertices)}\t{len(indices)}\n"
     o += "\n".join(str(vt_entry) for vt_entry in vertices) + "\n"
-    o += "\n".join(
-        # Thanks Steg! So concise:
-        # https://stackoverflow.com/questions/1624883/alternative-way-to-split-a-list-into-groups-of-n/1624988#1624988
-        ("IDX\t" + "\t".join(map(str,indices[i : i + 10])))
-        for i in range(0, len(indices), 10)
-    ) + "\n"
+    o += (
+        "\n".join(
+            # Thanks Steg! So concise:
+            # https://stackoverflow.com/questions/1624883/alternative-way-to-split-a-list-into-groups-of-n/1624988#1624988
+            ("IDX\t" + "\t".join(map(str, indices[i : i + 10])))
+            for i in range(0, len(indices), 10)
+        )
+        + "\n"
+    )
     return o

@@ -136,3 +136,5 @@ tmp/*
 
 *.orig
 tests/tmp/*
+
+builds/*
