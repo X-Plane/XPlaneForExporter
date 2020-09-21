@@ -200,18 +200,20 @@ class XPlaneForForestSettings(bpy.types.PropertyGroup):
     max_lod: bpy.props.IntProperty(
         name="Max LOD", description="The farthest distance the trees can be seen", min=0
     )
-    randomness: bpy.props.IntVectorProperty(
+    randomness: bpy.props.FloatVectorProperty(
         name="Randomness",
         description="How much each tree may deviation from a perfect grid filling, in meters",
         default=(20, 20),
         min=0,
+        precision=1,
         size=2,
     )
-    spacing: bpy.props.IntVectorProperty(
+    spacing: bpy.props.FloatVectorProperty(
         name="Spacing",
         description="How far apart, in meters, trees are spread",
         default=(24, 24),
         min=0,
+        precision=1,
         size=2,
     )
     surfaces_to_skip: bpy.props.CollectionProperty(
