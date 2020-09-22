@@ -157,7 +157,7 @@ class ForestTree:
 
             ret = (
                 all(round(v.z, 5) == 0 for v in [bl, br])
-                and all(round(v.z) > 0 for v in [tl, tr])
+                and all(round(v.z, 5) > 0 for v in [tl, tr])
                 and tl.x == bl.x
                 and tr.x == br.x
             )
