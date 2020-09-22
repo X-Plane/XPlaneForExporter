@@ -138,3 +138,5 @@ tmp/*
 tests/tmp/*
 
 builds/*
+*.kra~
+*.png~
