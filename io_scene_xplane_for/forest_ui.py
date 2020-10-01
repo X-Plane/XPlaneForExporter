@@ -1,7 +1,8 @@
 import itertools
+
 import bpy
-from . import forest_helpers
-from . import forest_constants
+
+from io_scene_xplane_for import forest_constants, forest_helpers, forest_props
 
 
 class DATA_PT_io_scene_xplane_for(bpy.types.Panel):
@@ -165,6 +166,42 @@ class SCENE_PT_io_scene_xplane_for(bpy.types.Panel):
                     text=f"Total: {total_percentages}",
                     icon="NONE" if round(total_percentages, 3) == 100 else "ERROR",
                 )
+
+        def _skip_surfaces_layout(
+            layout: bpy.types.UILayout, forest: forest_props.XPlaneForForestSettings
+        ):
+            disclosed = forest.disclose_skip_surfaces
+            row = layout.row()
+            box = layout.box()
+            box.row().prop(
+                forest,
+                "disclose_skip_surfaces",
+                text="Surfaces To Skip",
+                expand=True,
+                emboss=False,
+                icon="TRIA_DOWN" if disclosed  else "TRIA_RIGHT",
+            )
+
+            if not disclosed:
+                return
+
+            column = box.column_flow(columns=2, align=True)
+            for prop in (
+                "skip_surface_asphalt",
+                "skip_surface_blastpad",
+                "skip_surface_concrete",
+                "skip_surface_dirt",
+                "skip_surface_grass",
+                "skip_surface_gravel",
+                "skip_surface_lakebed",
+                "skip_surface_shoulder",
+                "skip_surface_snow",
+                "skip_surface_water",
+            ):
+                column.prop(forest, prop)
+
+        layout.separator()
+        _skip_surfaces_layout(layout, forest)
 
 
 register, unregister = bpy.utils.register_classes_factory(

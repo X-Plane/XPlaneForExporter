@@ -6,6 +6,7 @@ from typing import Dict, List, Optional, Tuple
 import bpy
 
 from io_scene_xplane_for import (
+    forest_constants,
     forest_header,
     forest_helpers,
     forest_logger,
@@ -171,7 +172,11 @@ class ForestFile:
                     o += f"{tree.write()}\n"
         o += "\n"
 
-        # TODO: Surfaces to skip
-        # o += "\n".join(set(forest_settings.surfaces_to_skip))
-        o += "\nSKIP_SURFACE water"
+        for surface_type in forest_constants.SURFACE_TYPES:
+            should_skip_type = getattr(
+                self.root_collection.xplane_for.forest, f"skip_surface_{surface_type}"
+            )
+            if should_skip_type:
+                o += f"\nSKIP_SURFACE {surface_type}"
+
         return o
