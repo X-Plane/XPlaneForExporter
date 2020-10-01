@@ -1,7 +1,7 @@
 import bpy
 from io_scene_xplane_for import forest_constants
 
-
+# fmt: off
 class XPlaneForTreeSettings(bpy.types.PropertyGroup):
     weighted_importance: bpy.props.IntProperty(
         name="Weighted Importance",
@@ -121,17 +121,6 @@ class XPlaneForObjectSettings(bpy.types.PropertyGroup):
     )
 
 
-class XPlaneForSkipSurfaceDirective(bpy.types.PropertyGroup):
-    skip_surface: bpy.props.EnumProperty(
-        name="Skip Surface",
-        description="Which surface type the forest should not appear on",
-        items=[
-            (surface_type, surface_type.title(), surface_type.title())
-            for surface_type in forest_constants.SURFACE_TYPES
-        ],
-    )
-
-
 class XPlaneForPerlinParameters(bpy.types.PropertyGroup):
     wavelength_amp_1: bpy.props.FloatVectorProperty(
         name="1st Distribution And Amplitude Pair",
@@ -160,6 +149,7 @@ class XPlaneForPerlinParameters(bpy.types.PropertyGroup):
 
 
 class XPlaneForForestSettings(bpy.types.PropertyGroup):
+    # --- Perlin Choices -----------------------------------------------------
     has_perlin_density: bpy.props.BoolProperty(
         name="Density Params",
         description="Turns on DENSITY_PARAMS and Groups",
@@ -190,6 +180,7 @@ class XPlaneForForestSettings(bpy.types.PropertyGroup):
         name="Height Options",
         description="Perlin pattern that makes clusters of tree heights",
     )
+    # ------------------------------------------------------------------------
 
     cast_shadow: bpy.props.BoolProperty(
         name="Cast Shadow", description="Trees in forest cast shadows", default=True
@@ -198,7 +189,10 @@ class XPlaneForForestSettings(bpy.types.PropertyGroup):
         name="Has Max LOD", description="If true, a maximum LOD is used", default=False
     )
     max_lod: bpy.props.IntProperty(
-        name="Max LOD", description="The farthest distance the trees can be seen", min=0
+        # TODO: Good default?
+        name="Max LOD",
+        description="The farthest distance the trees can be seen",
+        min=0,
     )
     randomness: bpy.props.FloatVectorProperty(
         name="Randomness",
@@ -216,10 +210,72 @@ class XPlaneForForestSettings(bpy.types.PropertyGroup):
         precision=1,
         size=2,
     )
-    surfaces_to_skip: bpy.props.CollectionProperty(
-        type=XPlaneForSkipSurfaceDirective,
-        description="Collection of surface types to skip, repeats not printed twice",
+
+    disclose_skip_surfaces: bpy.props.BoolProperty(
+        name="Disclose Surfaces To Skip Section",
+        default=False
     )
+    # --- Checkboxes for all our many surfaces to skip -----------------------
+    skip_surface_asphalt: bpy.props.BoolProperty(
+        name="Skip Asphalt",
+        description="Forest will not appear on asphalt surfaces",
+        default=False,
+    )
+
+    skip_surface_blastpad: bpy.props.BoolProperty(
+        name="Skip Blastpad",
+        description="Forest will not appear on blastpad surfaces",
+        default=False,
+    )
+
+    skip_surface_concrete: bpy.props.BoolProperty(
+        name="Skip Concrete",
+        description="Forest will not appear on concrete surfaces",
+        default=False,
+    )
+
+    skip_surface_dirt: bpy.props.BoolProperty(
+        name="Skip Dirt",
+        description="Forest will not appear on dirt surfaces",
+        default=False,
+    )
+
+    skip_surface_grass: bpy.props.BoolProperty(
+        name="Skip Grass",
+        description="Forest will not appear on grass surfaces",
+        default=False,
+    )
+
+    skip_surface_gravel: bpy.props.BoolProperty(
+        name="Skip Gravel",
+        description="Forest will not appear on gravel surfaces",
+        default=False,
+    )
+
+    skip_surface_lakebed: bpy.props.BoolProperty(
+        name="Skip Lakebed",
+        description="Forest will not appear on lakebed surfaces",
+        default=False,
+    )
+
+    skip_surface_shoulder: bpy.props.BoolProperty(
+        name="Skip Shoulder",
+        description="Forest will not appear on shoulder surfaces",
+        default=False,
+    )
+
+    skip_surface_snow: bpy.props.BoolProperty(
+        name="Skip Snow",
+        description="Forest will not appear on snow surfaces",
+        default=False,
+    )
+
+    skip_surface_water: bpy.props.BoolProperty(
+        name="Skip Water",
+        description="Forest will not appear on water surfaces",
+        default=True,
+    )
+    # -------------------------------------------------------------------------
 
 
 class XPlaneForCollectionSettings(bpy.types.PropertyGroup):
@@ -241,12 +297,12 @@ class XPlaneForCollectionSettings(bpy.types.PropertyGroup):
         step=2000,
         subtype="PERCENTAGE",
     )
+# fmt: on
 
 
 _classes = (
     XPlaneForPerlinParameters,
     XPlaneForTreeSettings,
-    XPlaneForSkipSurfaceDirective,
     XPlaneForForestSettings,
     XPlaneForObjectSettings,
     XPlaneForCollectionSettings,
