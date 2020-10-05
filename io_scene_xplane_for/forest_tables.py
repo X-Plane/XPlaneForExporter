@@ -28,16 +28,25 @@ class _TmpVert:
     normal: mathutils.Vector
     s: int
     t: int
-    weight: float
+    w_stiffness: float
+    w_edge_stiffness: float
+    w_phase: float
 
     def __str__(self) -> str:
         return f"VERTEX\t" + "\t".join(
             (
                 " ".join(map(forest_helpers.floatToStr, self.location)),
                 " ".join(map(forest_helpers.floatToStr, self.normal)),
-                f"{forest_helpers.floatToStr(self.s)}",
-                f"{forest_helpers.floatToStr(self.t)}",
-                forest_helpers.floatToStr(self.weight),
+                *map(
+                    forest_helpers.floatToStr,
+                    [
+                        self.s,
+                        self.t,
+                        self.w_stiffness,
+                        self.w_edge_stiffness,
+                        self.w_phase,
+                    ],
+                ),
             )
         )
 
@@ -101,15 +110,27 @@ def write_mesh_table(complex_object: bpy.types.Object) -> str:
                     else tmp_face.normals
                 )
                 uv = tmp_face.uvs[i]
-                v_groups = mesh.vertices[vt_index].groups
-                # TODO: To avoid confusion we only a VT in one group at a time. Right now there is no validation
-                weight = v_groups[0].weight if v_groups else 0
+                v_groups: Dict[str, float] = {
+                    complex_object.vertex_groups[g.group].name: g.weight
+                    for g in mesh.vertices[vt_index].groups
+                }
+
+                def get_w(vgroup_name: str) -> float:
+                    try:
+                        w = v_groups[vgroup_name]
+                    except KeyError:
+                        return 0
+                    else:
+                        return w
+
                 vt_entry = _TmpVert(
                     location=vertex.freeze(),
                     normal=normal.freeze(),
                     s=uv[0],
                     t=uv[1],
-                    weight=weight,
+                    w_stiffness=get_w("w_stiffness"),
+                    w_edge_stiffness=get_w("w_edge_stiffness"),
+                    w_phase=get_w("w_phase"),
                 )
                 return vt_entry
 
