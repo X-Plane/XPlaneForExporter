@@ -23,6 +23,7 @@ class DATA_PT_io_scene_xplane_for(bpy.types.Panel):
         ):
             self.layout.prop(context.object.data.xplane_for, "lod_near")
             self.layout.prop(context.object.data.xplane_for, "lod_far")
+            self.layout.prop(context.object.data.xplane_for, "wind_bend_ratio")
 
 
 class MATERIAL_PT_io_scene_xplane_for(bpy.types.Panel):

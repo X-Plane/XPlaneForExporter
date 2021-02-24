@@ -1,3 +1,4 @@
+import pprint
 import itertools
 import dataclasses
 from typing import Any, Iterable, List, Tuple, Dict, Optional, Union
@@ -155,6 +156,7 @@ def write_mesh_table(complex_object: bpy.types.Object) -> str:
                 f"{complex_object.data.xplane_for.lod_far}",
                 f"{len(vertices)}",
                 f"{len(indices)}",
+                f"{complex_object.data.xplane_for.wind_bend_ratio}",
             )
         )
         + "\n"

@@ -110,6 +110,12 @@ class XPlaneForMeshSettings(bpy.types.PropertyGroup):
         name="LOD (Far)",
         description="The far plane of the LOD, must be greater than the near",
         min=1,
+        default=500
+    )
+    wind_bend_ratio: bpy.props.FloatProperty(
+        name="Wind Bend Ratio",
+        description="This value affects the overall bend by the wind",
+        default=1.0
     )
 
 
