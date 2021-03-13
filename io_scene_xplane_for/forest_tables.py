@@ -157,6 +157,8 @@ def write_mesh_table(complex_object: bpy.types.Object) -> str:
                 f"{len(vertices)}",
                 f"{len(indices)}",
                 f"{complex_object.data.xplane_for.wind_bend_ratio}",
+                f"{complex_object.data.xplane_for.branch_stiffness}",
+                f"{complex_object.data.xplane_for.wind_speed}",
             )
         )
         + "\n"

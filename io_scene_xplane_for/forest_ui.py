@@ -21,9 +21,18 @@ class DATA_PT_io_scene_xplane_for(bpy.types.Panel):
             and context.object.parent
             and len(context.object.data.polygons) > 1
         ):
-            self.layout.prop(context.object.data.xplane_for, "lod_near")
-            self.layout.prop(context.object.data.xplane_for, "lod_far")
-            self.layout.prop(context.object.data.xplane_for, "wind_bend_ratio")
+            layout = self.layout
+            layout.label(text="3D tree mesh LOD")
+            row = layout.row()
+            row.prop(context.object.data.xplane_for, "lod_near", text="Near")
+            row.prop(context.object.data.xplane_for, "lod_far", text="Far")
+            box = layout.box()
+            box.label(text="Wind")
+            box.prop(context.object.data.xplane_for, "wind_bend_ratio")
+            box.label(text="Branch bending")
+            row = box.row()
+            row.prop(context.object.data.xplane_for, "branch_stiffness", text="Stiffness")
+            row.prop(context.object.data.xplane_for, "wind_speed")
 
 
 class MATERIAL_PT_io_scene_xplane_for(bpy.types.Panel):

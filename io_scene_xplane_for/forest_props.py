@@ -114,8 +114,18 @@ class XPlaneForMeshSettings(bpy.types.PropertyGroup):
     )
     wind_bend_ratio: bpy.props.FloatProperty(
         name="Wind Bend Ratio",
-        description="This value affects the overall bend by the wind",
+        description="Affects overall tree bend caused by the wind",
         default=1.0
+    )
+    branch_stiffness: bpy.props.FloatProperty(
+        name="Branch stiffness",
+        description="Defines maximum branch displacement in the wind direction in meters\n(uses 'w_stiffness' vertex data)",
+        default=1.0
+    )
+    wind_speed: bpy.props.FloatProperty(
+        name="Wind speed",
+        description="Speed of the wind at the maximum displacement (m/s)",
+        default=10.0
     )
 
 
