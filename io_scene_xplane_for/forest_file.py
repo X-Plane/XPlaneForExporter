@@ -92,8 +92,9 @@ class ForestFile:
             for forest_empty in [
                 obj
                 for obj in layer_number_provider.all_objects
-                if obj.type == "EMPTY"
-                and obj.children
+                if obj.type == "EMPTY" and obj.children
+                # TODO: Right? We shouldn't be allowing a TREE inside another tree
+                and not obj.parent
                 and forest_helpers.is_visible_in_viewport(obj, bpy.context.view_layer)
             ]:
                 try:
@@ -152,6 +153,7 @@ class ForestFile:
         ):
             object_name = complex_object.name
             mesh_name = complex_object.data.name
+            print(f"Object name: {object_name}, Mesh Name: {mesh_name}")
             if mesh_name not in written_meshes:
                 o += forest_tables.write_mesh_table(complex_object=complex_object)
                 written_meshes.add(mesh_name)

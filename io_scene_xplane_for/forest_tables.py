@@ -147,6 +147,8 @@ def write_mesh_table(complex_object: bpy.types.Object) -> str:
 
     o = ""
     o += "\n"
+    if complex_object.data.xplane_for.no_shadow: sh = "NO_SHADOW"
+    else: sh = ""
     o += (
         "\t".join(
             (
@@ -159,6 +161,7 @@ def write_mesh_table(complex_object: bpy.types.Object) -> str:
                 f"{complex_object.data.xplane_for.wind_bend_ratio}",
                 f"{complex_object.data.xplane_for.branch_stiffness}",
                 f"{complex_object.data.xplane_for.wind_speed}",
+                f"{sh}",
             )
         )
         + "\n"

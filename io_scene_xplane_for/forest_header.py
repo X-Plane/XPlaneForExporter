@@ -173,6 +173,7 @@ class ForestHeader:
             for directive in (
                 shader_type,
                 f"TEXTURE {texture_path}",
+                f"SEASONAL {texture_path}",
                 f"TEXTURE_NORMAL {forest_helpers.floatToStr(mat_settings.texture_path_normal_ratio)}\t{texture_path_normal}"
                 if mat_settings.texture_path_normal
                 else "",

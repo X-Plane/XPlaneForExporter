@@ -10,7 +10,17 @@ class XPlaneForTreeSettings(bpy.types.PropertyGroup):
         min=1,
     )
     max_height: bpy.props.FloatProperty(name="Max. Tree Height", min=0.0)
-
+    use_custom_lod: bpy.props.BoolProperty(
+        name="Use custom LOD",
+        description="Use explicit custom LOD distance for this tree",
+        default=False
+    )
+    custom_lod: bpy.props.IntProperty(
+        name="Custom LOD",
+        description="The far plane of the tree billboard",
+        default=5000,
+        min=0,
+    )
 
 class XPlaneForMaterialSettings(bpy.types.PropertyGroup):
     texture_path: bpy.props.StringProperty(
@@ -118,14 +128,19 @@ class XPlaneForMeshSettings(bpy.types.PropertyGroup):
         default=1.0
     )
     branch_stiffness: bpy.props.FloatProperty(
-        name="Branch stiffness",
+        name="Branch Stiffness",
         description="Defines maximum branch displacement in the wind direction in meters\n(uses 'w_stiffness' vertex data)",
         default=1.0
     )
     wind_speed: bpy.props.FloatProperty(
-        name="Wind speed",
+        name="Wind Speed",
         description="Speed of the wind at the maximum displacement (m/s)",
         default=10.0
+    )
+    no_shadow: bpy.props.BoolProperty(
+        name="No Shadow",
+        description="Excludes this mesh from shadow generation",
+        default=False
     )
 
 

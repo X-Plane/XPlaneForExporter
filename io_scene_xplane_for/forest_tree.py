@@ -97,6 +97,11 @@ class ForestTree:
 
         depsgraph = bpy.context.evaluated_depsgraph_get()
 
+        def fmt_vec(v, ndigits=2) -> str:
+            v = tuple(v)
+            return ", ".join(f"{c:02f}" for c in v)
+
+        print("Handling", tree_container.name)
 
         def get_bmesh_from_obj(obj: bpy.types.Object) -> bmesh.types.BMesh:
             """
@@ -175,17 +180,18 @@ class ForestTree:
                 continue
             elif mesh_is_rectangle(child):
                 if mesh_is_vertical(child):
-                    # print(child.name, "is vertical")
+                    print(f"{child.name} is vertical")
                     self.vert_info.quads += 1
                     # TODO: must ensure that both quads are identical,
                     # but rotated at 90 degrees or only pick the first one you see
                     self.vert_quad = child
                 elif mesh_is_horizontal(child):
-                    # print(child.name, "is horizontal")
+                    print(child.name, "is horizontal")
                     self.horz_quad = child
                 else:
                     pass
             elif len(child.data.polygons) > 1:
+                print(f"{child.name} is complex")
                 self.complex_objects.append(child)
             else:
                 print("idk what child is", child.name)
@@ -356,10 +362,19 @@ class ForestTree:
 
     def write(self) -> str:
         o = ""
-        o += (
-            f"#TREE\t<s>\t<t>\t<w>\t<h>\t<offset>\t<frequency>\t<min h>\t<max h>\t<quads>\t<layer>\t<notes>\n"
-            f"TREE\t{self.vert_info}\n"
-        )
+        if self.tree_container.xplane_for.tree.use_custom_lod:
+            o += (
+                f"#TREE2\t<s>\t<t>\t<w>\t<h>\t<offset>\t<frequency>\t<min h>\t<max h>\t<nominal h>\t<lod>\t<quads>\t<layer>\t<notes>\n"
+                f"TREE2\t{self.vert_info.s}\t{self.vert_info.t}\t{self.vert_info.w}\t{self.vert_info.h}"
+                f"\t{self.vert_info.offset}\t{self.vert_info.freq}\t{self.vert_info.min_height}\t{self.vert_info.max_height}"
+                f"\t{self.vert_info.min_height}\t{self.tree_container.xplane_for.tree.custom_lod}"
+                f"\t{self.vert_info.quads}\t{self.vert_info.layer_number}\t{self.vert_info.notes}\n"
+            )
+        else:
+            o += (
+                f"#TREE\t<s>\t<t>\t<w>\t<h>\t<offset>\t<frequency>\t<min h>\t<max h>\t<quads>\t<layer>\t<notes>\n"
+                f"TREE\t{self.vert_info}\n"
+            )
         if self.horz_quad:
             o += (
                 f"#Y_QUAD\t<left>	<bottom>	<width>	<height>	<offset_center_x>	<offset_center_y>	<width>	<elevation>	<rotation>\n"

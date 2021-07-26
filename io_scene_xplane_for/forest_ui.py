@@ -26,6 +26,7 @@ class DATA_PT_io_scene_xplane_for(bpy.types.Panel):
             row = layout.row()
             row.prop(context.object.data.xplane_for, "lod_near", text="Near")
             row.prop(context.object.data.xplane_for, "lod_far", text="Far")
+            layout.prop(context.object.data.xplane_for, "no_shadow", text="No shadow")
             box = layout.box()
             box.label(text="Wind")
             box.prop(context.object.data.xplane_for, "wind_bend_ratio")
@@ -84,6 +85,10 @@ class OBJECT_PT_io_scene_xplane_for(bpy.types.Panel):
             tree = context.object.xplane_for.tree
             self.layout.prop(tree, "weighted_importance")
             self.layout.prop(tree, "max_height")
+            row = self.layout.row()
+            row.prop(tree, "use_custom_lod")
+            if tree.use_custom_lod:
+                row.prop(tree, "custom_lod")
 
 
 class SCENE_PT_io_scene_xplane_for(bpy.types.Panel):
