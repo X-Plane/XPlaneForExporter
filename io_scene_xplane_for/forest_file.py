@@ -44,38 +44,38 @@ class ForestFile:
         self.file_name = file_name if file_name else self.root_collection.name
         self.header = forest_header.ForestHeader(self)
 
-        if self.has_perlin_params:
-            # Maps layer_number to percentage for use with GROUPs
-            self.group_percentages: Optional[Dict[int, float]] = {
-                int(child.name.split()[0]): child.xplane_for.percentage
-                for child in self.root_collection.children
-            }
-        else:
-            self.group_percentages: Optional[Dict[int, float]] = None
+        # if self.has_perlin_params:
+        #     # Maps layer_number to percentage for use with GROUPs
+        #     self.group_percentages: Optional[Dict[int, float]] = {
+        #         int(child.name.split()[0]): child.xplane_for.percentage
+        #         for child in self.root_collection.children
+        #     }
+        # else:
+        #     self.group_percentages: Optional[Dict[int, float]] = None
 
-    @property
-    def has_perlin_params(self) -> bool:
-        return any(
-            (
-                self.header.perlin_density,
-                self.header.perlin_choice,
-                self.header.perlin_height,
-            )
-        )
+    # @property
+    # def has_perlin_params(self) -> bool:
+    #     return any(
+    #         (
+    #             self.header.perlin_density,
+    #             self.header.perlin_choice,
+    #             self.header.perlin_height,
+    #         )
+    #     )
 
     def collect(self):
-        try:
-            total_percentages = round(sum(self.group_percentages.values()))
-        except AttributeError:  # No group_percentages
-            pass
-        else:
-            if total_percentages != 100:
-                logger.error(
-                    MessageCodes.E003,
-                    f"The sum of all group percentages must be exactly 100%,"
-                    f" but is {total_percentages}%",
-                    self.root_collection,
-                )
+        # try:
+        #     total_percentages = round(sum(self.group_percentages.values()))
+        # except AttributeError:  # No group_percentages
+        #     pass
+        # else:
+        #     if total_percentages != 100:
+        #         logger.error(
+        #             MessageCodes.E003,
+        #             f"The sum of all group percentages must be exactly 100%,"
+        #             f" but is {total_percentages}%",
+        #             self.root_collection,
+        #         )
 
         for layer_number_provider in self.root_collection.children:
             try:
@@ -160,18 +160,50 @@ class ForestFile:
 
         o += "\n"
         # for group in groups
-        for layer_number, trees_in_layer in itertools.groupby(
-            self.trees, key=lambda tree: tree.vert_info.layer_number
-        ):
-            if self.has_perlin_params:
-                o += f"GROUP {layer_number} {forest_helpers.floatToStr(self.group_percentages[layer_number])}\n"
-                for tree in trees_in_layer:
-                    o += "\n".join(
-                        "\t" + line for line in f"{tree.write()}\n".splitlines()
-                    )
+        # for layer_number, trees_in_layer in itertools.groupby(
+        #     self.trees, key=lambda tree: tree.vert_info.layer_number
+        # ):
+        #     if self.has_perlin_params:
+        #         o += f"GROUP {layer_number} {forest_helpers.floatToStr(self.group_percentages[layer_number])}\n"
+        #         for tree in trees_in_layer:
+        #             o += "\n".join(
+        #                 "\t" + line for line in f"{tree.write()}\n".splitlines()
+        #             )
+        #     else:
+        #         for tree in trees_in_layer:
+        #             o += f"{tree.write()}\n"
+
+        # get all layers
+        all_layers = []
+        for tree in self.trees:
+            all_layers.append(tree.vert_info.layer_number)
+        all_layers = list(set(all_layers))
+        all_layers.sort()
+
+        for lay in all_layers:
+            if self.header.perlin_choice:
+                for grp in range(4):
+                    trees_in_group = []
+                    for tree in self.trees:
+                        if int(tree.tree_container.xplane_for.tree.tree_group) == grp and tree.vert_info.layer_number == lay:
+                            trees_in_group.append(tree)
+                    if len(trees_in_group) > 0:
+                        wght = self.root_collection.xplane_for.groups_weight[grp]
+                        o += f"GROUP {lay} {wght}"
+                        for tr in trees_in_group:
+                            o += "\n"
+                            o += "\n".join(
+                                "\t" + line for line in f"{tr.write()}\n".splitlines()
+                            )
+                        o += "\n"
             else:
-                for tree in trees_in_layer:
-                    o += f"{tree.write()}\n"
+                trees_in_layer = []
+                for tree in self.trees:
+                    if tree.vert_info.layer_number == lay:
+                        trees_in_layer.append(tree)
+                if len(trees_in_layer) > 0:
+                    for tr in trees_in_layer:
+                        o += f"{tr.write()}\n"
         o += "\n"
 
         for surface_type in forest_constants.SURFACE_TYPES:

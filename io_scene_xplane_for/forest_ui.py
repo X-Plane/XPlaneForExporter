@@ -59,7 +59,14 @@ class MATERIAL_PT_io_scene_xplane_for(bpy.types.Panel):
             if getattr(material.xplane_for, has_attr):
                 row.prop(material.xplane_for, attr)
 
-        has_prop_pairing(box, "texture_path_normal", "texture_path_normal_ratio")
+        box.row().prop(material.xplane_for, "texture_path_normal")
+        box.row().prop(material.xplane_for, "texture_path_normal_ratio")
+        box.row().prop(material.xplane_for, "has_luma_values")
+        if material.xplane_for.has_luma_values:
+            box.row().prop(material.xplane_for, "luma_values", text='RGBA')
+        else:
+            box.row().prop(material.xplane_for, "texture_path_weather")
+
         has_prop_pairing(box, "has_specular", "specular")
         has_prop_pairing(box, "has_bump_level", "bump_level")
         box.row().prop(material.xplane_for, "blend_mode", expand=True)
@@ -89,6 +96,9 @@ class OBJECT_PT_io_scene_xplane_for(bpy.types.Panel):
             row.prop(tree, "use_custom_lod")
             if tree.use_custom_lod:
                 row.prop(tree, "custom_lod")
+            row = self.layout.row()
+            row.label(text="Group")
+            row.prop(tree, "tree_group", expand=True)
 
 
 class SCENE_PT_io_scene_xplane_for(bpy.types.Panel):
@@ -135,6 +145,7 @@ class SCENE_PT_io_scene_xplane_for(bpy.types.Panel):
             lod_row.prop(forest, "max_lod")
 
         layout.row().prop(forest, "cast_shadow")
+        layout.row().prop(forest, "has_seasons")
 
         def draw_perlin_params(row, pointer_prop, enabled):
             column = row.column_flow(columns=4, align=True)
@@ -144,43 +155,51 @@ class SCENE_PT_io_scene_xplane_for(bpy.types.Panel):
             column.prop(pointer_prop, "wavelength_amp_3", text="3rd")
             column.prop(pointer_prop, "wavelength_amp_4", text="4th")
 
+        layout.row().label(text="Perlin noise")
+
         box = layout.box()
-        box.label(
-            text="Perlin distribution and amplitude given as pairs in each column"
-        )
         den = box.row()
         den.prop(forest, "has_perlin_density")
-        den = box.row()
-        draw_perlin_params(den, forest.perlin_density, forest.has_perlin_density)
-        choice = layout.row()
+        if forest.has_perlin_density:
+            den = box.row()
+            draw_perlin_params(den, forest.perlin_density, forest.has_perlin_density)
+
+        box = layout.box()
+        choice = box.row()
         choice.prop(forest, "has_perlin_choice")
-        choice = layout.row()
-        draw_perlin_params(choice, forest.perlin_choice, forest.has_perlin_choice)
-        height = layout.row()
+        if forest.has_perlin_choice:
+            choice = box.row()
+            draw_perlin_params(choice, forest.perlin_choice, forest.has_perlin_choice)
+            box.row().label(text="Groups 0-3 (percentage 0-100%)")
+            box.row().prop(collection.xplane_for, "groups_weight", text='')
+
+        box = layout.box()
+        height = box.row()
         height.prop(forest, "has_perlin_height")
-        height = layout.row()
-        draw_perlin_params(height, forest.perlin_height, forest.has_perlin_height)
+        if forest.has_perlin_height:
+            height = box.row()
+            draw_perlin_params(height, forest.perlin_height, forest.has_perlin_height)
 
-        if any(
-            (
-                forest.has_perlin_density,
-                forest.has_perlin_choice,
-                forest.has_perlin_height,
-            )
-        ):
-            box = layout.box()
-            total_percentages = 0.0
-            for child in collection.children:
-                row = box.row()
-                row.label(text=child.name)
-                row.prop(child.xplane_for, "percentage")
-                total_percentages += child.xplane_for.percentage
+        # if any(
+        #     (
+        #         forest.has_perlin_density,
+        #         forest.has_perlin_choice,
+        #         forest.has_perlin_height,
+        #     )
+        # ):
+        #     box = layout.box()
+        #     total_percentages = 0.0
+        #     for child in collection.children:
+        #         row = box.row()
+        #         row.label(text=child.name)
+        #         row.prop(child.xplane_for, "percentage")
+        #         total_percentages += child.xplane_for.percentage
 
-            if collection.children:
-                box.row().label(
-                    text=f"Total: {total_percentages}",
-                    icon="NONE" if round(total_percentages, 3) == 100 else "ERROR",
-                )
+        #     if collection.children:
+        #         box.row().label(
+        #             text=f"Total: {total_percentages}",
+        #             icon="NONE" if round(total_percentages, 3) == 100 else "ERROR",
+        #         )
 
         def _skip_surfaces_layout(
             layout: bpy.types.UILayout, forest: forest_props.XPlaneForForestSettings

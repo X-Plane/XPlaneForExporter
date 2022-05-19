@@ -364,7 +364,7 @@ class ForestTree:
         o = ""
         if self.tree_container.xplane_for.tree.use_custom_lod:
             o += (
-                f"#TREE2\t<s>\t<t>\t<w>\t<h>\t<offset>\t<frequency>\t<min h>\t<max h>\t<nominal h>\t<lod>\t<quads>\t<layer>\t<notes>\n"
+                f"#TREE2\t<s>\t<t>\t<w>\t<h>\t<off>\t<frq>\t<min h>\t<max h>\t<nom h>\t<lod>\t<qds>\t<lay>\t<notes>\n"
                 f"TREE2\t{self.vert_info.s}\t{self.vert_info.t}\t{self.vert_info.w}\t{self.vert_info.h}"
                 f"\t{self.vert_info.offset}\t{self.vert_info.freq}\t{self.vert_info.min_height}\t{self.vert_info.max_height}"
                 f"\t{self.vert_info.min_height}\t{self.tree_container.xplane_for.tree.custom_lod}"
@@ -372,7 +372,7 @@ class ForestTree:
             )
         else:
             o += (
-                f"#TREE\t<s>\t<t>\t<w>\t<h>\t<offset>\t<frequency>\t<min h>\t<max h>\t<quads>\t<layer>\t<notes>\n"
+                f"#TREE\t<s>\t<t>\t<w>\t<h>\t<off>\t<frq>\t<min h>\t<max h>\t<qds>\t<lay>\t<notes>\n"
                 f"TREE\t{self.vert_info}\n"
             )
         if self.horz_quad:

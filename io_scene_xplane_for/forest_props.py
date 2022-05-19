@@ -21,26 +21,57 @@ class XPlaneForTreeSettings(bpy.types.PropertyGroup):
         default=5000,
         min=0,
     )
+    tree_group: bpy.props.EnumProperty(
+        items=(
+            ('0', '0', 'Group 0'),
+            ('1', '1', 'Group 1'),
+            ('2', '2', 'Group 2'),
+            ('3', '3', 'Group 3'),
+        ),
+        name="Tree group",
+        description="A group which the tree belongs to (used for choice feature)",
+    )
 
 class XPlaneForMaterialSettings(bpy.types.PropertyGroup):
     texture_path: bpy.props.StringProperty(
-        name="Texture File",
-        description="Forest texture file",
+        name="Albedo",
+        description="Albedo texture",
         default="",
         subtype="FILE_PATH",
     )
     texture_path_normal: bpy.props.StringProperty(
-        name="Texture File (Normal)",
-        description="(Normal) Forest texture file",
+        name="Normal",
+        description="Normal map texture",
         default="",
         subtype="FILE_PATH",
     )
     texture_path_normal_ratio: bpy.props.FloatProperty(
-        name="Normal Texture File (ratio)",
+        name="Normal texture ratio",
         description="The number of times a normal map repeates for every tile of the albedo map. The ratio can change 'noisy' normal maps to be higher resolution.",
         default=1.0,
         min=0.0,
     )
+
+    # weather
+    texture_path_weather: bpy.props.StringProperty(
+        name="Weather",
+        description="Weather mask texture",
+        default="",
+        subtype="FILE_PATH",
+    )
+    has_luma_values: bpy.props.BoolProperty(
+        name = "Has albedo luma",
+        description = "Has unique albedo luma values for snow mask\n(this is a global setting for the entire shader)",
+        default = False
+    )
+    luma_values: bpy.props.FloatVectorProperty(
+        name="Luma values (RGBA)",
+        description="RGBA values for the creation of snow mask based on albedo texture",
+        default=(1, 1, 1, 0),
+        precision=1,
+        size=4,
+    )
+
     blend_mode: bpy.props.EnumProperty(
         items=(
             (forest_constants.BLEND_NONE, "None", "No blend mode chosen"),
@@ -62,6 +93,7 @@ class XPlaneForMaterialSettings(bpy.types.PropertyGroup):
         default=0.0,
         min=0.0,
     )
+
     has_specular: bpy.props.BoolProperty(name="Has Specular")
     specular: bpy.props.FloatProperty(
         name="Specular",
@@ -154,26 +186,26 @@ class XPlaneForObjectSettings(bpy.types.PropertyGroup):
 
 class XPlaneForPerlinParameters(bpy.types.PropertyGroup):
     wavelength_amp_1: bpy.props.FloatVectorProperty(
-        name="1st Distribution And Amplitude Pair",
-        description="Perlin Spread and Amplitude",
+        name="1st Amplitude And Wavelength Pair",
+        description="Perlin Amplitude (0-1) and Wavelength (meters)",
         precision=3,
         size=2,
     )
     wavelength_amp_2: bpy.props.FloatVectorProperty(
-        name="2nd Distribution And Amplitude Pair",
-        description="Perlin Spread and Amplitude",
+        name="2nd Amplitude And Wavelength Pair",
+        description="Perlin Amplitude (0-1) and Wavelength (meters)",
         precision=3,
         size=2,
     )
     wavelength_amp_3: bpy.props.FloatVectorProperty(
-        name="3rd Distribution And Amplitude Pair",
-        description="Perlin Spread and Amplitude",
+        name="3rd Amplitude And Wavelength Pair",
+        description="Perlin Amplitude (0-1) and Wavelength (meters)",
         precision=3,
         size=2,
     )
     wavelength_amp_4: bpy.props.FloatVectorProperty(
-        name="4th Distribution And Amplitude Pair",
-        description="Perlin Spread and Amplitude",
+        name="4th Amplitude And Wavelength Pair",
+        description="Perlin Amplitude (0-1) and Wavelength (meters)",
         precision=3,
         size=2,
     )
@@ -183,17 +215,17 @@ class XPlaneForForestSettings(bpy.types.PropertyGroup):
     # --- Perlin Choices -----------------------------------------------------
     has_perlin_density: bpy.props.BoolProperty(
         name="Density Params",
-        description="Turns on DENSITY_PARAMS and Groups",
+        description="Turns on DENSITY_PARAMS",
         default=False,
     )
     has_perlin_choice: bpy.props.BoolProperty(
         name="Choice Params",
-        description="Turns on CHOICE_PARAMS and Groups",
+        description="Turns on CHOICE_PARAMS and GROUPS",
         default=False,
     )
     has_perlin_height: bpy.props.BoolProperty(
         name="Height Params",
-        description="Turns on HEIGHT_PARAMS and Groups",
+        description="Turns on HEIGHT_PARAMS",
         default=False,
     )
     perlin_density: bpy.props.PointerProperty(
@@ -215,6 +247,9 @@ class XPlaneForForestSettings(bpy.types.PropertyGroup):
 
     cast_shadow: bpy.props.BoolProperty(
         name="Cast Shadow", description="Trees in forest cast shadows", default=True
+    )
+    has_seasons: bpy.props.BoolProperty(
+        name="Has Seasons", description="Write TEXTURE_SEASON command (dirty temporary hack)", default=False
     )
     has_max_lod: bpy.props.BoolProperty(
         name="Has Max LOD", description="If true, a maximum LOD is used", default=False
@@ -316,18 +351,24 @@ class XPlaneForCollectionSettings(bpy.types.PropertyGroup):
         description="A file name or relative path, if none Collection name is used.",
         subtype="FILE_PATH",
     )
+    groups_weight: bpy.props.IntVectorProperty(
+        name="Percentage of groups",
+        description="The Sum of values of all used groups should add up to 100%",
+        size=4,
+        default=[100,0,0,0],
+    )
 
     # Since we use sub-children of the forest to represent GROUPs
     # we need each collection to have this
-    percentage: bpy.props.FloatProperty(
-        name="Percent",
-        description="Percent of how often thi is used",
-        default=0.0,
-        min=0.0,
-        max=100,
-        step=2000,
-        subtype="PERCENTAGE",
-    )
+    # percentage: bpy.props.FloatProperty(
+    #     name="Percent",
+    #     description="Percent of how often this is used",
+    #     default=0.0,
+    #     min=0.0,
+    #     max=100,
+    #     step=2000,
+    #     subtype="PERCENTAGE",
+    # )
 # fmt: on
 
 
