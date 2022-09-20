@@ -32,7 +32,8 @@ class TestXPlaneStdShaderDirectives(tests.ForestTestCase):
         }
         for fixture_file in [
             "test_2D_and_3D_shaders_and_all_options",
-            "test_2D_shader_and_all_options",
+            "test_2D_shader_and_all_options_blend_hash",
+            "test_2D_shader_and_all_options_no_blend",
             "test_2D_shader_and_no_options",
         ]:
             with self.subTest(filename=fixture_file):

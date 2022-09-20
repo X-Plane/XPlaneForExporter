@@ -55,7 +55,7 @@ class ForestHeader:
     def collect(self):
         """Must be called after trees are collected. Raises ValueError for various problems"""
 
-        def collect_shader_materials() -> Tuple[bpy.types.Material, bpy.types.Material]:
+        def collect_shader_materials() -> Tuple[bpy.types.Material, Optional[bpy.types.Material]]:
             shader_materials = [None, None]
             try:
                 shader_2Ds = {
@@ -133,8 +133,6 @@ class ForestHeader:
         )
         o += self._write_perlin_params()
 
-        print(o)
-
         return o
 
     def _write_perlin_params(self) -> str:
@@ -170,16 +168,33 @@ class ForestHeader:
         texture_path_normal = mat_settings.texture_path_normal.replace(
             "//", ""
         ).replace("\\", "/")
+        texture_path_weather = mat_settings.texture_path_weather.replace("//", "").replace("\\", "/")
+        # get luma values
+        luma = ''
+        for i in range(0, 4):
+            luma += str(round(mat_settings.luma_values[i], 4)) + ' '
         o = "\n".join(
             "\t" + directive if directive != shader_type else shader_type
             for directive in (
                 shader_type,
                 f"TEXTURE {texture_path}",
+                f"SEASONAL {texture_path}"
+                if self.forest_file.root_collection.xplane_for.forest.has_seasons
+                else "",
                 f"TEXTURE_NORMAL {forest_helpers.floatToStr(mat_settings.texture_path_normal_ratio)}\t{texture_path_normal}"
                 if mat_settings.texture_path_normal
                 else "",
-                f"NO_BLEND {forest_helpers.floatToStr(mat_settings.no_blend)}"
-                if mat_settings.has_no_blend
+                f"WEATHER {texture_path_weather}"
+                if mat_settings.texture_path_weather and not mat_settings.has_luma_values
+                else "",
+                f"SNOW_ALBEDO_LUMA {luma}"
+                if mat_settings.has_luma_values
+                else "",
+                f"NO_BLEND {forest_helpers.floatToStr(mat_settings.no_blend_level)}"
+                if mat_settings.blend_mode == forest_constants.BLEND_NO_BLEND
+                else "",
+                f"BLEND_HASH {forest_helpers.floatToStr(mat_settings.blend_hash_level)}"
+                if mat_settings.blend_mode == forest_constants.BLEND_BLEND_HASH
                 else "",
                 f"SPECULAR {forest_helpers.floatToStr(mat_settings.specular)}"
                 if mat_settings.has_specular

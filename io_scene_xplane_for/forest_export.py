@@ -46,7 +46,8 @@ class EXPORT_OT_XPlaneFor(bpy.types.Operator, ExportHelper):
         def write_to_disk(forest_file) -> None:
             o = forest_file.write()
             if debug:
-                print("---", o, "---", sep="\n")
+                #print("---", o, "---", sep="\n")
+                pass
             file_name = bpy.path.ensure_ext(forest_file.file_name, ".for")
             if logger.errors:
                 return

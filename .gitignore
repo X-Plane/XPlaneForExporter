@@ -136,3 +136,7 @@ tmp/*
 
 *.orig
 tests/tmp/*
+
+builds/*
+*.kra~
+*.png~

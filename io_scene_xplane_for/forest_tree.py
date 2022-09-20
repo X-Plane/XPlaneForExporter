@@ -1,18 +1,19 @@
-import itertools
-import functools
 import dataclasses
+import functools
+import itertools
 import math
-from pprint import pprint
-from typing import Tuple, List, Union, Any, Callable, Dict, Optional
 import operator
+import pathlib
 from operator import attrgetter
+from pprint import pprint
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import bmesh
 import bpy
 import mathutils
 
 from io_scene_xplane_for import forest_helpers
-from io_scene_xplane_for.forest_logger import logger, MessageCodes
+from io_scene_xplane_for.forest_logger import MessageCodes, logger
 
 
 @dataclasses.dataclass
@@ -96,13 +97,18 @@ class ForestTree:
 
         depsgraph = bpy.context.evaluated_depsgraph_get()
 
+        def fmt_vec(v, ndigits=2) -> str:
+            v = tuple(v)
+            return ", ".join(f"{c:02f}" for c in v)
+
+        print("Handling", tree_container.name)
+
         def get_bmesh_from_obj(obj: bpy.types.Object) -> bmesh.types.BMesh:
+            """
+            Returns a bmesh from an object's evaluated mesh,
+            users of the function should call free when done with this
+            """
             b = bmesh.new()
-            bpy.context.view_layer.objects[obj.name].select_set(True)
-            bpy.ops.object.transform_apply(
-                location=False, rotation=True, scale=False,
-            )
-            bpy.context.view_layer.objects[obj.name].select_set(False)
             object_eval = obj.evaluated_get(depsgraph)
             mesh_eval = object_eval.to_mesh(
                 preserve_all_data_layers=False, depsgraph=depsgraph
@@ -111,10 +117,7 @@ class ForestTree:
             b.from_mesh(mesh_eval)
             b.transform(object_eval.matrix_world)
             object_eval.to_mesh_clear()
-            # This might just be superstition to make a copy
-            cp = b.copy()
-            b.free()
-            return cp
+            return b
 
         def mesh_is_rectangle(obj: bpy.types.Object) -> bool:
             b = get_bmesh_from_obj(obj)
@@ -150,30 +153,20 @@ class ForestTree:
             )
 
         def mesh_is_vertical(obj: bpy.types.Object):
-            bpy.context.view_layer.objects[obj.name].select_set(True)
-            bpy.ops.object.transform_apply(
-                location=False, rotation=True, scale=False,
-            )
-            bpy.context.view_layer.objects[obj.name].select_set(False)
-            object_eval = obj.evaluated_get(depsgraph)
-            z_axis = mathutils.Vector((0, 0, 1))
+            b = get_bmesh_from_obj(obj)
 
-            left, bottom, right, top = [
-                verts_from_edge_global(
-                    edge, object_eval.matrix_world, object_eval.data.vertices
-                )
-                for edge in object_eval.data.edges
-            ]
+            bl, tl, br, tr = sorted(
+                map(lambda v: forest_helpers.round_vec(v.co), b.verts),
+                key=lambda v: tuple(v),
+            )
 
             ret = (
-                all(round(v.z, 5) == 0 for v in bottom)
-                and all(round(v.z, 5) > 0 for v in top)
-                #TODO: These should work, but, we'll just trust the author instead of bothering with it more
-                #and round(sum(edge.dot(z_axis) for edge in [left[0], right[0]]), 5)
-                #== 0.0
-                #and left[0].x <= 0
+                all(round(v.z, 5) == 0 for v in [bl, br])
+                and all(round(v.z, 5) > 0 for v in [tl, tr])
+                and tl.x == bl.x
+                and tr.x == br.x
             )
-            object_eval.to_mesh_clear()
+            b.free()
             return ret
 
         def mesh_is_horizontal(obj: bpy.types.Object):
@@ -182,20 +175,23 @@ class ForestTree:
             object_eval.to_mesh_clear()
             return ret
 
-        for child in self.tree_container.children:
-            if mesh_is_rectangle(child):
+        for child in forest_helpers.get_all_children_recursive(self.tree_container):
+            if child.type in {"ARMATURE", "EMPTY"}:
+                continue
+            elif mesh_is_rectangle(child):
                 if mesh_is_vertical(child):
-                    # print(child.name, "is vertical")
+                    print(f"{child.name} is vertical")
                     self.vert_info.quads += 1
                     # TODO: must ensure that both quads are identical,
                     # but rotated at 90 degrees or only pick the first one you see
                     self.vert_quad = child
                 elif mesh_is_horizontal(child):
-                    # print(child.name, "is horizontal")
+                    print(child.name, "is horizontal")
                     self.horz_quad = child
                 else:
                     pass
             elif len(child.data.polygons) > 1:
+                print(f"{child.name} is complex")
                 self.complex_objects.append(child)
             else:
                 print("idk what child is", child.name)
@@ -209,34 +205,43 @@ class ForestTree:
             raise ValueError
         else:
             try:
-                self.texture_image = (
-                    # All children must have the same image texture anyway per validation
-                    self.vert_quad.material_slots[0]
-                    .material.node_tree.nodes["Image Texture"]
-                    .image
-                )
+                _2D_shader = self.vert_quad.material_slots[0].material
             except (IndexError, AttributeError):
                 logger.error(
                     MessageCodes.E002,
                     "Tree vert_quad had no 1st slot or no material in its first slot",
                     self.vert_quad,
                 )
-                raise
-            except KeyError:
-                logger.error(
-                    MessageCodes.E002,
-                    "Material's nodes didn't have an image texture",
-                    self.vert_quad,
-                )
-                raise
-            except ValueError:
-                logger.error(
-                    MessageCodes.E002,
-                    "Material's image texture had no image",
-                    self.tree_container.vert_quad,
-                )
-                raise
-            size_x, size_y = self.texture_image.size
+                raise ValueError(logger.errors[-1].msg_content)
+            else:
+                try:
+                    xplane_tex_path = _2D_shader.xplane_for.texture_path
+                    self.texture_image = next(
+                        image
+                        for image in bpy.data.images
+                        if bpy.path.abspath(image.filepath)
+                        == bpy.path.abspath(xplane_tex_path)
+                    )
+                except StopIteration:
+                    self.texture_image = bpy.data.images.new(
+                        pathlib.Path(bpy.path.abspath(xplane_tex_path)).stem,
+                        width=0,
+                        height=0,
+                    )
+                    self.texture_image.source = "FILE"
+                    self.texture_image.filepath = xplane_tex_path
+
+                if self.texture_image.size[:] == (0, 0):
+                    logger.error(
+                        MessageCodes.E012,
+                        f"Image at '{xplane_tex_path}' could not be found",
+                        self.vert_quad,
+                    )
+                    bpy.data.images.remove(self.texture_image)
+                    self.texture_image = None
+                    raise ValueError(logger.errors[-1].msg_content)
+                else:
+                    size_x, size_y = self.texture_image.size
 
         def set_vert_props():
             object_eval = self.vert_quad.evaluated_get(depsgraph)
@@ -330,7 +335,9 @@ class ForestTree:
             )
 
             vert_left_m, vert_bottom_m, vert_right_m, vert_top = [
-                verts_from_edge_global(edge, self.vert_quad.matrix_world)
+                verts_from_edge_global(
+                    edge, self.vert_quad.matrix_world, self.vert_quad.data.vertices
+                )
                 for edge in self.vert_quad.data.edges
             ]
             vert_bottom_length_m = (vert_bottom_m[0] - vert_bottom_m[1]).length
@@ -355,15 +362,30 @@ class ForestTree:
 
     def write(self) -> str:
         o = ""
-        o += (
-            f"#TREE\t<s>\t<t>\t<w>\t<h>\t<offset>\t<frequency>\t<min h>\t<max h>\t<quads>\t<layer>\t<notes>\n"
-            f"TREE\t{self.vert_info}\n"
-        )
+        if self.tree_container.xplane_for.tree.use_custom_lod:
+            o += (
+                f"#TREE2\t<s>\t<t>\t<w>\t<h>\t<off>\t<frq>\t<min h>\t<max h>\t<nom h>\t<lod>\t<qds>\t<lay>\t<notes>\n"
+                f"TREE2\t{self.vert_info.s}\t{self.vert_info.t}\t{self.vert_info.w}\t{self.vert_info.h}"
+                f"\t{self.vert_info.offset}\t{self.vert_info.freq}\t{self.vert_info.min_height}\t{self.vert_info.max_height}"
+                f"\t{self.vert_info.min_height}\t{self.tree_container.xplane_for.tree.custom_lod}"
+                f"\t{self.vert_info.quads}\t{self.vert_info.layer_number}\t{self.vert_info.notes}\n"
+            )
+        else:
+            o += (
+                f"#TREE\t<s>\t<t>\t<w>\t<h>\t<off>\t<frq>\t<min h>\t<max h>\t<qds>\t<lay>\t<notes>\n"
+                f"TREE\t{self.vert_info}\n"
+            )
         if self.horz_quad:
             o += (
                 f"#Y_QUAD\t<left>	<bottom>	<width>	<height>	<offset_center_x>	<offset_center_y>	<width>	<elevation>	<rotation>\n"
                 f"Y_QUAD\t{self.horz_info}"
             )
-        o += "\n".join(f"MESH_3D\t{obj.name}" for obj in self.complex_objects)
+        o += "\n".join(
+            f"MESH_3D\t{mesh_name}"
+            for mesh_name in sorted(
+                {obj.data.name for obj in self.complex_objects},
+                key=lambda mesh_name: mesh_name,
+            )
+        )
 
         return o

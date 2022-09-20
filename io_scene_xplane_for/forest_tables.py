@@ -1,3 +1,4 @@
+import pprint
 import itertools
 import dataclasses
 from typing import Any, Iterable, List, Tuple, Dict, Optional, Union
@@ -20,8 +21,6 @@ class _TmpFace:
         Tuple[float, float, float],
     ]
     uvs: Tuple[mathutils.Vector, mathutils.Vector, mathutils.Vector]
-    # TODO
-    # bone_weight:float
 
 
 @dataclasses.dataclass(eq=True, frozen=True)
@@ -30,21 +29,30 @@ class _TmpVert:
     normal: mathutils.Vector
     s: int
     t: int
-    weight: float
+    w_stiffness: float
+    w_edge_stiffness: float
+    w_phase: float
 
     def __str__(self) -> str:
         return f"VERTEX\t" + "\t".join(
             (
                 " ".join(map(forest_helpers.floatToStr, self.location)),
                 " ".join(map(forest_helpers.floatToStr, self.normal)),
-                f"{forest_helpers.floatToStr(self.s)}",
-                f"{forest_helpers.floatToStr(self.t)}",
-                forest_helpers.floatToStr(self.weight),
+                *map(
+                    forest_helpers.floatToStr,
+                    [
+                        self.s,
+                        self.t,
+                        self.w_stiffness,
+                        self.w_edge_stiffness,
+                        self.w_phase,
+                    ],
+                ),
             )
         )
 
 
-def write_mesh_table(complex_object) -> str:
+def write_mesh_table(complex_object: bpy.types.Object) -> str:
     """
     Returns the MESH.... VERTEX.... IDX.... table for one object
     """
@@ -60,19 +68,17 @@ def write_mesh_table(complex_object) -> str:
     mesh.calc_normals_split()
     mesh.calc_loop_triangles()
 
-    def make_tmp_faces(mesh) -> Iterable[_TmpFace]:
+    def make_tmp_faces(mesh: bpy.types.Mesh) -> Iterable[_TmpFace]:
         try:
             uv_layer = mesh.uv_layers[eval_obj.data.uv_layers.active.name]
         except (KeyError, TypeError) as e:
             uv_layer = None
 
-        blank_uvs = (mathutils.Vector((0.0, 0.0)),) * 3
-
         for tri in mesh.loop_triangles:
             uvs = (
                 tuple(uv_layer.data[loop_index].uv for loop_index in tri.loops)
                 if uv_layer
-                else blank_uvs
+                else (mathutils.Vector((0.0, 0.0)),) * 3
             )
             yield _TmpFace(
                 original_face=tri,
@@ -105,9 +111,28 @@ def write_mesh_table(complex_object) -> str:
                     else tmp_face.normals
                 )
                 uv = tmp_face.uvs[i]
+                v_groups: Dict[str, float] = {
+                    complex_object.vertex_groups[g.group].name: g.weight
+                    for g in mesh.vertices[vt_index].groups
+                }
+
+                def get_w(vgroup_name: str) -> float:
+                    try:
+                        w = v_groups[vgroup_name]
+                    except KeyError:
+                        return 0
+                    else:
+                        return w
+
                 vt_entry = _TmpVert(
-                    location=vertex.freeze(), normal=normal.freeze(), s=uv[0], t=uv[1], weight=0
-                )  # , weight=weight)
+                    location=vertex.freeze(),
+                    normal=normal.freeze(),
+                    s=uv[0],
+                    t=uv[1],
+                    w_stiffness=get_w("w_stiffness"),
+                    w_edge_stiffness=get_w("w_edge_stiffness"),
+                    w_phase=get_w("w_phase"),
+                )
                 return vt_entry
 
             vt_entry = make_vt_entry(tmp_face, i)
@@ -122,12 +147,33 @@ def write_mesh_table(complex_object) -> str:
 
     o = ""
     o += "\n"
-    o += f"MESH\t{complex_object.name}\t{complex_object.xplane_for.lod_near}\t{complex_object.xplane_for.lod_far}\t{len(vertices)}\t{len(indices)}\n"
+    if complex_object.data.xplane_for.no_shadow: sh = "NO_SHADOW"
+    else: sh = ""
+    o += (
+        "\t".join(
+            (
+                f"MESH",
+                f"{complex_object.data.name}",
+                f"{complex_object.data.xplane_for.lod_near}",
+                f"{complex_object.data.xplane_for.lod_far}",
+                f"{len(vertices)}",
+                f"{len(indices)}",
+                f"{complex_object.data.xplane_for.wind_bend_ratio}",
+                f"{complex_object.data.xplane_for.branch_stiffness}",
+                f"{complex_object.data.xplane_for.wind_speed}",
+                f"{sh}",
+            )
+        )
+        + "\n"
+    )
     o += "\n".join(str(vt_entry) for vt_entry in vertices) + "\n"
-    o += "\n".join(
-        # Thanks Steg! So concise:
-        # https://stackoverflow.com/questions/1624883/alternative-way-to-split-a-list-into-groups-of-n/1624988#1624988
-        ("IDX\t" + "\t".join(map(str,indices[i : i + 10])))
-        for i in range(0, len(indices), 10)
-    ) + "\n"
+    o += (
+        "\n".join(
+            # Thanks Steg! So concise:
+            # https://stackoverflow.com/questions/1624883/alternative-way-to-split-a-list-into-groups-of-n/1624988#1624988
+            ("IDX\t" + "\t".join(map(str, indices[i : i + 10])))
+            for i in range(0, len(indices), 10)
+        )
+        + "\n"
+    )
     return o
